@@ -113,7 +113,6 @@ class DifficultTopic(db.Model):
 
 # Decorators
 def login_required(f):
-    @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('logged_in', False):
             return redirect(url_for('login'))
@@ -121,7 +120,6 @@ def login_required(f):
     return decorated_function
 
 def admin_required(f):
-    @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('is_admin', False):
             return redirect(url_for('login'))
@@ -139,7 +137,10 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         
+        print(f"Login attempt: username='{username}', password_length={len(password)}")
+        
         if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
+            print("Admin credentials correct!")
             # Create admin user if not exists
             admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
             if not admin_user:
@@ -168,6 +169,9 @@ def login():
             session['logged_in'] = True
             session.permanent = True
             
+            print(f"Session created: {dict(session)}")
+            print("Redirecting to admin dashboard...")
+            
             return redirect(url_for('admin_dashboard'))
         else:
             return render_template('login.html', error="Login yoki parol noto'g'ri!")
@@ -175,9 +179,17 @@ def login():
     return render_template('login.html')
 
 @app.route('/admin')
-@login_required
-@admin_required
 def admin_dashboard():
+    print(f"Admin dashboard accessed. Session: {dict(session)}")
+    
+    # Check if user is logged in
+    if not session.get('logged_in', False):
+        print("Not logged in, redirecting to login")
+        return redirect(url_for('login'))
+    
+    if not session.get('is_admin', False):
+        print("Not admin, redirecting to login")
+        return redirect(url_for('login'))
     total_students = User.query.filter_by(is_admin=False).count()
     total_groups = Group.query.count()
     total_tests = Test.query.count()
