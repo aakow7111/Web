@@ -69,14 +69,36 @@ def login():
         
         print(f"Login attempt: username={username}")
         
-        # Check if admin user exists
-        admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
-        print(f"Admin user found: {admin_user is not None}")
+        # Hardcoded admin check for debugging
+        if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
+            print("Hardcoded admin login successful!")
+            
+            # Create admin user if not exists
+            admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
+            if not admin_user:
+                print("Creating admin user on login...")
+                default_group = Group.query.filter_by(id=1).first()
+                if not default_group:
+                    default_group = Group(id=1, name='Default', total_score=0)
+                    db.session.add(default_group)
+                    db.session.flush()
+                
+                admin_user = User(
+                    username='AkmalJaxonkulov',
+                    password_hash=generate_password_hash('Akmal1221'),
+                    first_name='Akmal',
+                    last_name='Jaxonkulov',
+                    group_id=1,
+                    is_admin=True
+                )
+                db.session.add(admin_user)
+                db.session.commit()
+                print("Admin user created!")
+            
+            login_user(admin_user)
+            return redirect(url_for('admin_dashboard'))
         
-        if admin_user:
-            print(f"Admin user details: {admin_user.username}, is_admin: {admin_user.is_admin}")
-        
-        # Try to authenticate
+        # Try normal authentication
         user = User.query.filter_by(username=username).first()
         
         if user:
@@ -90,7 +112,7 @@ def login():
                 return redirect(url_for('admin_dashboard'))
         
         print("Login failed!")
-        flash('Login yoki parol noto\'g\'ri!', 'danger')
+        return render_template('login.html', error="Login yoki parol noto'g'ri!")
     
     return render_template('login.html')
 
