@@ -1,0 +1,25 @@
+services:
+  # Web Service
+  - type: web
+    name: education-platform
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    healthCheckPath: /
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: education-db
+          property: connectionString
+
+  # PostgreSQL Database
+  - type: pserv
+    name: education-db
+    plan: free
+    databaseName: education
+    user: education

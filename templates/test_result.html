@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Test natijasi{% endblock %}
+
+{% block page_title %}Test natijasi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">{{ result.test.title }}</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <div class="display-1 mb-3">
+                        {% set percentage = (result.score / result.total_questions * 100) %}
+                        {% if percentage >= 90 %}
+                            <span class="text-success">A+</span>
+                        {% elif percentage >= 80 %}
+                            <span class="text-primary">A</span>
+                        {% elif percentage >= 70 %}
+                            <span class="text-info">B</span>
+                        {% elif percentage >= 60 %}
+                            <span class="text-warning">C</span>
+                        {% else %}
+                            <span class="text-danger">D</span>
+                        {% endif %}
+                    </div>
+                    
+                    <h2>{{ result.score }} / {{ result.total_questions }}</h2>
+                    <h4>{{ "%.1f"|format(percentage) }}%</h4>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>To'g'ri javoblar</h6>
+                                <h3 class="text-success">{{ result.score }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Noto'g'ri javoblar</h6>
+                                <h3 class="text-danger">{{ result.total_questions - result.score }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Sana</h6>
+                                <h5 class="text-muted">{{ result.date_taken.strftime('%d.%m.%Y') }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle"></i> Test haqida ma'lumot</h6>
+                    <p class="mb-1"><strong>Fan:</strong> {{ result.test.subject.name }}</p>
+                    <p class="mb-0"><strong>Topshirilgan vaqt:</strong> {{ result.date_taken.strftime('%H:%M') }}</p>
+                </div>
+                
+                {% if result.test.is_daily and percentage >= 80 %}
+                <div class="alert alert-success">
+                    <h6><i class="fas fa-trophy"></i> Tabriklaymiz!</h6>
+                    <p class="mb-0">Siz kundalik testda 80% dan yuqori natija ko'rsatdingiz! Sizning guruhingizga {{ result.score }} ball qo'shildi.</p>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('tests') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Testlarga qaytish
+                    </a>
+                    {% if current_user.is_admin %}
+                        <button onclick="window.print()" class="btn btn-secondary">
+                            <i class="fas fa-print"></i> Chop etish
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Participants Results -->
+{% if all_results %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> Barcha ishtirokchilar natijalari</h5>
+                <small class="text-muted">Jami {{ all_results|length }} o'quvchi ishtirok etdi</small>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>O'quvchi</th>
+                                <th>Login</th>
+                                <th>Ball</th>
+                                <th>Foiz</th>
+                                <th>Topshirilgan vaqt</th>
+                                <th>Baholash</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result_item in all_results %}
+                            {% set percentage = (result_item.score / result_item.total_questions * 100) %}
+                            <tr {% if result_item.student_id == result.student_id %}class="table-info"{% endif %}>
+                                <td><strong>{{ loop.index }}</strong></td>
+                                <td>
+                                    {% if result_item.student_id == result.student_id %}
+                                        <strong>{{ result_item.student.first_name }} {{ result_item.student.last_name }}</strong>
+                                    {% else %}
+                                        {{ result_item.student.first_name }} {{ result_item.student.last_name }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ result_item.student.username }}</td>
+                                <td>
+                                    <span class="badge {% if percentage >= 80 %}bg-success{% elif percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ result_item.score }}/{{ result_item.total_questions }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-2" style="width: 100px; height: 20px;">
+                                            <div class="progress-bar {% if percentage >= 80 %}bg-success{% elif percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                 style="width: {{ percentage }}%">
+                                            </div>
+                                        </div>
+                                        <small>{{ "%.1f"|format(percentage) }}%</small>
+                                    </div>
+                                </td>
+                                <td>{{ result_item.date_taken.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td>
+                                    {% if percentage >= 90 %}
+                                        <span class="badge bg-success">A+</span>
+                                    {% elif percentage >= 80 %}
+                                        <span class="badge bg-primary">A</span>
+                                    {% elif percentage >= 70 %}
+                                        <span class="badge bg-info">B</span>
+                                    {% elif percentage >= 60 %}
+                                        <span class="badge bg-warning">C</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">D</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card bg-light text-center">
+                            <div class="card-body">
+                                <h5 class="text-success">{{ (all_results|selectattr('score')|map(attribute='score')|sum / all_results|length)|round(1) }}</h5>
+                                <small>O'rtacha ball</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light text-center">
+                            <div class="card-body">
+                                <h5 class="text-info">{{ (all_results|selectattr('score')|map(attribute='score')|max) }}</h5>
+                                <small>Eng yuqori ball</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light text-center">
+                            <div class="card-body">
+                                <h5 class="text-warning">{{ (all_results|selectattr('score')|map(attribute='score')|min) }}</h5>
+                                <small>Eng past ball</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light text-center">
+                            <div class="card-body">
+                                <h5 class="text-primary">{{ (all_results|selectattr('score')|map(attribute='score')|sum) }}</h5>
+                                <small>Jami ball</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Individual Total Score -->
+                {% if result %}
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h4><i class="fas fa-trophy"></i> Sizning umumiy ballaringiz</h4>
+                                <h2>{{ result.score }} / {{ result.total_questions }}</h2>
+                                <h5>{{ "%.1f"|format((result.score / result.total_questions * 100)) }}%</h5>
+                                {% if result.score >= result.total_questions * 0.8 %}
+                                    <p class="mb-0"><i class="fas fa-star"></i> A'lo natija!</p>
+                                {% elif result.score >= result.total_questions * 0.6 %}
+                                    <p class="mb-0"><i class="fas fa-thumbs-up"></i> Yaxshi natija!</p>
+                                {% else %}
+                                    <p class="mb-0"><i class="fas fa-book"></i> Ko'proq mashq qiling!</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

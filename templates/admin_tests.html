@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+
+{% block title %}Testlar boshqaruvi{% endblock %}
+
+{% block page_title %}Testlar boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clipboard-list"></i> Testlar ro'yxati</h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Test Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addTestForm">
+                            <i class="fas fa-plus"></i> Yangi test qo'shish
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="collapse mb-4" id="addTestForm">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6>Yangi test qo'shish</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('admin_add_test') }}">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label for="title" class="form-label">Test nomi</label>
+                                        <input type="text" class="form-control" id="title" name="title" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="subject_id" class="form-label">Fan</label>
+                                        <select class="form-select" id="subject_id" name="subject_id" required>
+                                            {% for subject in subjects %}
+                                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="duration_minutes" class="form-label">Davomiyligi (daqiqa)</label>
+                                        <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" value="60" min="1">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Test turi</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_daily" name="is_daily">
+                                            <label class="form-check-label" for="is_daily">
+                                                Kundalik test
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_comprehensive" name="is_comprehensive">
+                                            <label class="form-check-label" for="is_comprehensive">
+                                                Katta test (TDYU)
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="is_dtm" name="is_dtm">
+                                            <label class="form-check-label" for="is_dtm">
+                                                DTM test
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-md-4">
+                                        <label for="start_time" class="form-label">Boshlanish vaqti</label>
+                                        <input type="datetime-local" class="form-control" id="start_time" name="start_time">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="end_time" class="form-label">Tugash vaqti</label>
+                                        <input type="datetime-local" class="form-control" id="end_time" name="end_time">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="test_date" class="form-label">Test sanasi</label>
+                                        <input type="date" class="form-control" id="test_date" name="test_date" required>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Saqlash
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tests List -->
+                {% if tests %}
+                <div class="row">
+                    {% for test in tests %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="card-title">{{ test.title }}</h6>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="#" class="btn btn-outline-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="#" class="btn btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <p class="card-text">
+                                        <i class="fas fa-book"></i> {{ test.subject.name }}
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-question-circle"></i> {{ test.questions|length }} savol
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="fas fa-calendar"></i> {{ test.test_date.strftime('%d.%m.%Y') }}
+                                    </p>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {% if test.is_daily %}
+                                        <span class="badge bg-warning">Kundalik</span>
+                                    {% endif %}
+                                    {% if test.is_comprehensive %}
+                                        <span class="badge bg-danger">Katta test</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <a href="#" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-plus"></i> Savol qo'shish
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-outline-success">
+                                        <i class="fas fa-chart-bar"></i> Natijalar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Testlar mavjud emas</h4>
+                    <p class="text-muted">Yangi test qo'shing</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Question Management Modal -->
+<div class="modal fade" id="questionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Savol qo'shish</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="question_text" class="form-label">Savol matni</label>
+                        <textarea class="form-control" id="question_text" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Javob variantlari</label>
+                        <div id="optionsContainer">
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">A</span>
+                                <input type="text" class="form-control" name="option_a" required>
+                            </div>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">B</span>
+                                <input type="text" class="form-control" name="option_b" required>
+                            </div>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">C</span>
+                                <input type="text" class="form-control" name="option_c" required>
+                            </div>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">D</span>
+                                <input type="text" class="form-control" name="option_d" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="correct_answer" class="form-label">To'g'ri javob</label>
+                        <select class="form-select" id="correct_answer" required>
+                            <option value="">Tanlang...</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <button type="button" class="btn btn-primary">Saqlash</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

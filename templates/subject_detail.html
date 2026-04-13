@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}{{ subject.name }} - Mavzular{% endblock %}
+
+{% block page_title %}{{ subject.name }} - Mavzular{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4 class="card-title">{{ subject.name }}</h4>
+                <p class="card-text">{{ subject.description or 'Tafsilotlar mavjud emas' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for topic in topics %}
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {% if topic.id in difficult_topic_ids %}
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                    {% endif %}
+                    {{ topic.title }}
+                </h5>
+                <div>
+                    <a href="#" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#topicModal{{ topic.id }}">
+                        <i class="fas fa-eye"></i> Ko'rish
+                    </a>
+                    <a href="{{ url_for('mark_difficult', topic_id=topic.id) }}" class="btn btn-sm btn-outline-warning">
+                        {% if topic.id in difficult_topic_ids %}
+                            <i class="fas fa-times"></i> Qiyinlikdan olib tashlash
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle"></i> Qiyin deb belgilash
+                        {% endif %}
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text">{{ topic.content[:200] }}{% if topic.content|length > 200 %}...{% endif %}</p>
+                {% if topic.video_url %}
+                    <small class="text-muted">
+                        <i class="fas fa-video"></i> Video dars mavjud
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Topic Modal -->
+    <div class="modal fade" id="topicModal{{ topic.id }}" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ topic.title }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6>Matnli tushuntirish:</h6>
+                        <div class="bg-light p-3 rounded">
+                            {{ topic.content|safe }}
+                        </div>
+                    </div>
+                    {% if topic.video_url %}
+                    <div class="mb-3">
+                        <h6>Video dars:</h6>
+                        <div class="embed-responsive embed-responsive-16by9">
+                            <iframe class="embed-responsive-item" src="{{ topic.video_url }}" frameborder="0" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ url_for('mark_difficult', topic_id=topic.id) }}" class="btn btn-warning">
+                        {% if topic.id in difficult_topic_ids %}
+                            <i class="fas fa-times"></i> Qiyinlikdan olib tashlash
+                        {% else %}
+                            <i class="fas fa-exclamation-triangle"></i> Qiyin deb belgilash
+                        {% endif %}
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% if not topics %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-book-open fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">Hali mavzular mavjud emas</h4>
+            <p class="text-muted">Admin mavzular qo'shishi kerak</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

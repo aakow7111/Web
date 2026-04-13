@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Guruh rahbari paneli{% endblock %}
+
+{% block page_title %}Guruh rahbari paneli{% endblock %}
+
+{% block content %}
+<!-- Leader Info Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient-primary text-white">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4><i class="fas fa-user-tie"></i> Guruh rahbari: {{ current_user.first_name }} {{ current_user.last_name }}</h4>
+                        <p class="mb-0"><strong>Guruh:</strong> {{ group.name }} | <strong>Login:</strong> {{ current_user.username }}</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="badge bg-light text-dark p-3">
+                            <h5 class="mb-0">#{{ group_rank }} / {{ total_groups }}</h5>
+                            <small>Guruh reytingi</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Group Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x text-primary mb-3"></i>
+                <h3>{{ group_students|length }}</h3>
+                <p class="text-muted">O'quvchilar</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-trophy fa-2x text-success mb-3"></i>
+                <h3>{{ group.total_score }}</h3>
+                <p class="text-muted">Guruh ballari</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-clipboard-check fa-2x text-info mb-3"></i>
+                <h3>{{ total_tests }}</h3>
+                <p class="text-muted">Test natijalari</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x text-warning mb-3"></i>
+                <h3>{{ avg_percentage }}%</h3>
+                <p class="text-muted">O'rtacha foiz</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="row">
+    <!-- Group Students -->
+    <div class="col-md-7 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-users"></i> Guruh o'quvchilari</h5>
+                <span class="badge bg-primary">{{ group_students|length }} o'quvchi</span>
+            </div>
+            <div class="card-body">
+                {% if group_students %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Ism</th>
+                                    <th>Login</th>
+                                    <th>Ballari</th>
+                                    <th>Testlar</th>
+                                    <th>Foiz</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in group_students %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                                    </td>
+                                    <td><code>{{ student.username }}</code></td>
+                                    <td>
+                                        {% set student_score = student.test_results|sum(attribute='score') %}
+                                        <span class="badge bg-info">{{ student_score }}</span>
+                                    </td>
+                                    <td>{{ student.test_results|length }}</td>
+                                    <td>
+                                        {% if student.test_results|length > 0 %}
+                                            {% set total = student.test_results|sum(attribute='score') %}
+                                            {% set count = student.test_results|sum(attribute='total_questions') %}
+                                            {% set percentage = (total / count * 100) %}
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar {% if percentage >= 80 %}bg-success{% elif percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ percentage }}%">
+                                                    {{ "%.1f"|format(percentage) }}%
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                        <h5 class="text-muted">Guruhda o'quvchilar mavjud emas</h5>
+                        <p class="text-muted">Admin o'quvchilar qo'shishi kerak</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Results & Certificates -->
+    <div class="col-md-5 mb-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> So'nggi test natijalari</h5>
+            </div>
+            <div class="card-body">
+                {% if group_results %}
+                    {% for result in group_results[:5] %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                        <div>
+                            <strong>{{ result.student.first_name }} {{ result.student.last_name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ result.test.title }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if result.score >= result.total_questions * 0.8 %}bg-success{% elif result.score >= result.total_questions * 0.6 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ result.score }}/{{ result.total_questions }}
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ result.date_taken.strftime('%d.%m.%Y') }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center">Test natijalari mavjud emas</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-certificate"></i> Sertifikatlar</h5>
+            </div>
+            <div class="card-body">
+                {% if group_certificates %}
+                    {% for cert in group_certificates[:3] %}
+                    <div class="mb-2 p-2 bg-light rounded">
+                        <h6>{{ cert.title }}</h6>
+                        <small class="text-muted">{{ cert.student.first_name }} {{ cert.student.last_name }}</small>
+                    </div>
+                    {% endfor %}
+                    {% if group_certificates|length > 3 %}
+                    <small class="text-muted">Jami {{ group_certificates|length }} sertifikat</small>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted text-center">Sertifikatlar mavjud emas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Tezkor harakatlar</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('group_rating', group_id=group.id) }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-trophy fa-2x mb-2"></i>
+                            Guruh reytingi
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('tests') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-clipboard-check fa-2x mb-2"></i>
+                            Testlar
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('schedule') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-calendar fa-2x mb-2"></i>
+                            Jadval
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('subjects') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-book-open fa-2x mb-2"></i>
+                            Fanlar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.stats-card {
+    transition: transform 0.3s ease;
+}
+.stats-card:hover {
+    transform: translateY(-5px);
+}
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+</style>
+{% endblock %}

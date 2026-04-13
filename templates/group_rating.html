@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}{{ group.name }} guruh reytingi{% endblock %}
+
+{% block page_title %}{{ group.name }} guruh reytingi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> {{ group.name }} guruh reytingi</h5>
+            </div>
+            <div class="card-body">
+                {% if student_stats %}
+                    {% for stat in student_stats %}
+                    <div class="student-rating-item {% if loop.first %}top-student{% endif %}">
+                        <div class="row align-items-center">
+                            <div class="col-md-1 text-center">
+                                {% if loop.first %}
+                                    <i class="fas fa-trophy fa-2x text-warning"></i>
+                                {% elif loop.index == 2 %}
+                                    <i class="fas fa-medal fa-2x text-secondary"></i>
+                                {% elif loop.index == 3 %}
+                                    <i class="fas fa-medal fa-2x" style="color: #cd7f32;"></i>
+                                {% else %}
+                                    <h3 class="text-muted">{{ loop.index }}</h3>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <h5>{{ stat.student.first_name }} {{ stat.student.last_name }}</h5>
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-user"></i> 
+                                    {{ stat.student.username }}
+                                </p>
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-clipboard-list"></i> 
+                                    {{ stat.total_tests }} test
+                                </p>
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-certificate"></i> 
+                                    {{ stat.certificate_count }} sertifikat
+                                </p>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="progress mb-2" style="height: 20px;">
+                                    <div class="progress-bar {% if stat.avg_percentage >= 80 %}bg-success{% elif stat.avg_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         style="width: {{ stat.avg_percentage }}%">
+                                        {{ stat.avg_percentage }}%
+                                    </div>
+                                </div>
+                                <small class="text-muted">O'rtacha foiz</small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <h3 class="mb-0">
+                                    <span class="badge badge-score fs-4">
+                                        {{ stat.total_score }} ball
+                                    </span>
+                                </h3>
+                                {% if loop.first %}
+                                    <small class="text-warning">
+                                        <i class="fas fa-star"></i> Guruh chempioni
+                                    </small>
+                                {% endif %}
+                                <div class="mt-2">
+                                    {% if stat.recent_results %}
+                                        <small class="text-muted">
+                                            So'nggi natija: 
+                                            {% for result in stat.recent_results[:1] %}
+                                                {{ result.score }}/{{ result.total_questions }} ({{ "%.1f"|format((result.score / result.total_questions * 100)) }}%)
+                                            {% endfor %}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Guruhda o'quvchilar mavjud emas</h4>
+                        <p class="text-muted">Admin o'quvchilar qo'shishi kerak</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Guruh statistikasi</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-primary">{{ student_stats|length }}</h4>
+                        <small class="text-muted">O'quvchilar</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-success">{{ group.total_score }}</h4>
+                        <small class="text-muted">Umumiy ball</small>
+                    </div>
+                    <div class="col-4">
+                        {% set total_tests = student_stats|sum(attribute='total_tests') %}
+                        <h4 class="text-info">{{ total_tests }}</h4>
+                        <small class="text-muted">Testlar</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-medal"></i> Top 3 o'quvchilar</h5>
+            </div>
+            <div class="card-body">
+                {% for stat in student_stats[:3] %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ loop.index }}.</strong> {{ stat.student.first_name }} {{ stat.student.last_name }}
+                    </div>
+                    <div>
+                        <span class="badge {% if loop.first %}bg-warning{% elif loop.index == 2 %}bg-secondary{% else %}bg-danger{% endif %}">
+                            {{ stat.total_score }} ball
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Reyting haqida</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-star"></i> Ballar qanday hisoblanadi?</h6>
+                        <ul>
+                            <li>Har bir to'g'ri javob 1 ball beradi</li>
+                            <li>Barcha testlar natijalari yig'indisi hisoblanadi</li>
+                            <li>Sertifikatlar uchun qo'shimcha ball berilmaydi</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-trophy"></i> Mukofotlar</h6>
+                        <ul>
+                            <li>Guruhda 1-o'rin oluvchiga maxsus e'tirof</li>
+                            <li>Top 3 o'quvchilar sertifikat bilan taqdirlanadi</li>
+                            <li>Oyning eng yaxshi o'quvchilari e'lon qilinadi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="text-center">
+            <a href="{{ url_for('groups_rating') }}" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left"></i> Barcha guruhlar reytingiga qaytish
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.student-rating-item {
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: white;
+    transition: all 0.3s;
+}
+
+.student-rating-item:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.top-student {
+    border-color: #ffc107;
+    background: linear-gradient(45deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.badge-score {
+    background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+</style>
+{% endblock %}

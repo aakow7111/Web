@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Jadvalni tahrirlash{% endblock %}
+
+{% block page_title %}Jadvalni tahrirlash{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-edit"></i> Dars jadvalini tahrirlash</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="group_id" class="form-label">Guruh</label>
+                                <select class="form-select" id="group_id" name="group_id" required>
+                                    <option value="">Guruhni tanlang</option>
+                                    {% for group in groups %}
+                                    <option value="{{ group.id }}" {% if group.id == schedule.group_id %}selected{% endif %}>
+                                        {{ group.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="subject_id" class="form-label">Fan</label>
+                                <select class="form-select" id="subject_id" name="subject_id" required>
+                                    <option value="">Fanni tanlang</option>
+                                    {% for subject in subjects %}
+                                    <option value="{{ subject.id }}" {% if subject.id == schedule.subject_id %}selected{% endif %}>
+                                        {{ subject.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="day_of_week" class="form-label">Kun</label>
+                                <select class="form-select" id="day_of_week" name="day_of_week" required>
+                                    <option value="">Kunni tanlang</option>
+                                    <option value="0" {% if schedule.day_of_week == 0 %}selected{% endif %}>Dushanba</option>
+                                    <option value="1" {% if schedule.day_of_week == 1 %}selected{% endif %}>Seshanba</option>
+                                    <option value="2" {% if schedule.day_of_week == 2 %}selected{% endif %}>Chorshanba</option>
+                                    <option value="3" {% if schedule.day_of_week == 3 %}selected{% endif %}>Payshanba</option>
+                                    <option value="4" {% if schedule.day_of_week == 4 %}selected{% endif %}>Juma</option>
+                                    <option value="5" {% if schedule.day_of_week == 5 %}selected{% endif %}>Shanba</option>
+                                    <option value="6" {% if schedule.day_of_week == 6 %}selected{% endif %}>Yakshanba</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="time_slot" class="form-label">Vaqt oralig'i</label>
+                                <input type="text" class="form-control" id="time_slot" name="time_slot" 
+                                       value="{{ schedule.time_slot }}" required>
+                                <div class="form-text">Dars vaqtini kiriting</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="start_time" class="form-label">Boshlanish vaqti</label>
+                                <input type="time" class="form-control" id="start_time" name="start_time" 
+                                       value="{{ schedule.start_time.strftime('%H:%M') if schedule.start_time else '' }}">
+                                <div class="form-text">Aniq boshlanish vaqti</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="end_time" class="form-label">Tugash vaqti</label>
+                                <input type="time" class="form-control" id="end_time" name="end_time" 
+                                       value="{{ schedule.end_time.strftime('%H:%M') if schedule.end_time else '' }}">
+                                <div class="form-text">Aniq tugash vaqti</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('admin_schedule') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Orqaga
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

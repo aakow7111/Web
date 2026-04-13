@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Fanni Tahrirlash{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-edit"></i> Fanni Tahrirlash</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="form-group mb-3">
+                            <label for="name">Fan nomi</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ subject.name }}" required>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label for="description">Tavsif</label>
+                            <textarea class="form-control" id="description" name="description" rows="4">{{ subject.description }}</textarea>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            <label><i class="fas fa-info-circle"></i> Fan ma'lumotlari</label>
+                            <div class="alert alert-info">
+                                <p class="mb-1"><strong>Fan ID:</strong> {{ subject.id }}</p>
+                                <p class="mb-1"><strong>Mavzular soni:</strong> {{ subject.topics|length }}</p>
+                                <p class="mb-0"><strong>Testlar soni:</strong> {{ subject.tests|length }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin_subjects') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Orqaga
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

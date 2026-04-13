@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block page_title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-3"></i>
+                <h3>{{ total_students }}</h3>
+                <p class="mb-0">O'quvchilar</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-layer-group fa-2x mb-3"></i>
+                <h3>{{ total_groups }}</h3>
+                <p class="mb-0">Guruhlar</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-2x mb-3"></i>
+                <h3>{{ total_tests }}</h3>
+                <p class="mb-0">Testlar</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-2x mb-3"></i>
+                <h3>{{ recent_results|length }}</h3>
+                <p class="mb-0">So'nggi natijalar</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Tezkor harakatlar</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('admin_students') }}" class="btn btn-outline-primary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            O'quvchi qo'shish
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('admin_groups') }}" class="btn btn-outline-success w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                            Guruh qo'shish
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('admin_subjects') }}" class="btn btn-outline-info w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-book-open fa-2x mb-2"></i>
+                            Fan qo'shish
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('admin_tests') }}" class="btn btn-outline-warning w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                            Test qo'shish
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('admin_schedule') }}" class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+                            Jadval qo'shish
+                        </a>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <a href="{{ url_for('groups_rating') }}" class="btn btn-outline-danger w-100 h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fas fa-trophy fa-2x mb-2"></i>
+                            Reyting
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Test Results -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> So'nggi test natijalari</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_results %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>O'quvchi</th>
+                                    <th>Test</th>
+                                    <th>Natija</th>
+                                    <th>Foiz</th>
+                                    <th>Sana</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in recent_results %}
+                                <tr>
+                                    <td>{{ result.student.first_name }} {{ result.student.last_name }}</td>
+                                    <td>{{ result.test.title }}</td>
+                                    <td>{{ result.score }}/{{ result.total_questions }}</td>
+                                    <td>
+                                        <span class="badge badge-score">
+                                            {{ "%.1f"|format((result.score / result.total_questions * 100)) }}%
+                                        </span>
+                                    </td>
+                                    <td>{{ result.date_taken.strftime('%d.%m.%Y %H:%M') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Hali test natijalari mavjud emas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

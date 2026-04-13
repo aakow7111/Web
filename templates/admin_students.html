@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}O'quvchilar boshqaruvi{% endblock %}
+
+{% block page_title %}O'quvchilar boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-users"></i> O'quvchilar ro'yxati</h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Student Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addStudentForm">
+                            <i class="fas fa-plus"></i> Yangi o'quvchi qo'shish
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="collapse mb-4" id="addStudentForm">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6>Yangi o'quvchi qo'shish</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('admin_add_student') }}">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label for="username" class="form-label">Login</label>
+                                        <input type="text" class="form-control" id="username" name="username" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="password" class="form-label">Parol</label>
+                                        <input type="password" class="form-control" id="password" name="password" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="first_name" class="form-label">Ism</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="last_name" class="form-label">Familiya</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="group_id" class="form-label">Guruh</label>
+                                        <select class="form-select" id="group_id" name="group_id" required>
+                                            {% for group in groups %}
+                                            <option value="{{ group.id }}">{{ group.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save"></i> Saqlash
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Students Table -->
+                {% if students %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>F.I.Sh</th>
+                                <th>Login</th>
+                                <th>Guruh</th>
+                                <th>Testlar soni</th>
+                                <th>O'rtacha ball</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ student.first_name }} {{ student.last_name }}</td>
+                                <td>{{ student.username }}</td>
+                                <td>{{ student.group.name }}</td>
+                                <td>{{ student.test_results|length }}</td>
+                                <td>
+                                    {% if student.test_results %}
+                                        {% set total = student.test_results|sum(attribute='score') %}
+                                        {% set count = student.test_results|sum(attribute='total_questions') %}
+                                        {{ "%.1f"|format((total / count * 100)) }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="#" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ student.id }}">
+                                        <i class="fas fa-key"></i> Parol
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent({{ student.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">O'quvchilar mavjud emas</h4>
+                    <p class="text-muted">Yangi o'quvchi qo'shing</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Password Reset Modals -->
+{% for student in students %}
+<div class="modal fade" id="resetPasswordModal{{ student.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Parolni yangilash - {{ student.first_name }} {{ student.last_name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin_reset_password', student_id=student.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">O'quvchi ma'lumotlari:</label>
+                        <div class="bg-light p-3 rounded">
+                            <strong>Ism:</strong> {{ student.first_name }}<br>
+                            <strong>Familiya:</strong> {{ student.last_name }}<br>
+                            <strong>Login:</strong> {{ student.username }}<br>
+                            <strong>Guruh:</strong> {{ student.group.name }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_password_{{ student.id }}" class="form-label">Yangi parol</label>
+                        <input type="password" class="form-control" id="new_password_{{ student.id }}" name="new_password" required>
+                        <div class="form-text">O'quvchi ushbu parol bilan tizimga kirishi mumkin bo'ladi.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-key"></i> Parolni yangilash
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function deleteStudent(studentId) {
+    if (confirm('Rostdan ham ushbu o\'quvchini o\'chirmoqchimisiz? Barcha ma\'lumotlari (test natijalari, sertifikatlar va h.k.) o\'chiriladi!')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/delete_student/' + studentId;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+{% endblock %}

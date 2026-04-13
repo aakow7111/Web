@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Testlar{% endblock %}
+
+{% block page_title %}Testlar{% endblock %}
+
+{% block content %}
+<!-- 7-Day Schedule Overview -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-gradient-primary text-white">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week"></i> 7 Kunlik Test Jadvali</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Kun</th>
+                                        <th>Sana</th>
+                                        <th>Fan</th>
+                                        <th>Test turi</th>
+                                        <th>Savollar soni</th>
+                                        <th>Vaqt</th>
+                                        <th>Holati</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for day_data in week_schedule %}
+                                        <tr class="{% if day_data.is_today %}table-light{% endif %}">
+                                            <td>
+                                                {% if day_data.is_today %}
+                                                    <strong class="text-primary">{{ day_data.day_name }}</strong>
+                                                {% else %}
+                                                    {{ day_data.day_name }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ day_data.test_date.strftime('%d.%m.%Y') }}</td>
+                                            <td>{{ day_data.subject_name }}</td>
+                                            <td>
+                                                {% if day_data.is_dtm_day %}
+                                                    <span class="badge bg-danger">DTM Test</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Kundalik Test</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ day_data.question_count }} ta</td>
+                                            <td>{{ day_data.test_time }}</td>
+                                            <td>
+                                                {% if day_data.is_past %}
+                                                    <span class="badge bg-secondary">O'tib ketgan</span>
+                                                {% elif day_data.is_today %}
+                                                    <span class="badge bg-success">Bugun</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">Kutilmoqda</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-clipboard-list"></i> Barcha Testlar</h5>
+            </div>
+            <div class="card-body">
+                <!-- Test Schedule Table -->
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Sana</th>
+                                <th>Fan</th>
+                                <th>Test turi</th>
+                                <th>Vaqt</th>
+                                <th>Davomiyligi</th>
+                                <th>Holati</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test in tests %}
+                            <tr class="{% if test.test_date.date() == current_time.date() %}table-info{% endif %}">
+                                <td>
+                                    {% if test.test_date.date() == current_time.date() %}
+                                        <strong>Bugun</strong><br>
+                                    {% endif %}
+                                    {{ test.test_date.strftime('%d.%m.%Y') }}
+                                </td>
+                                <td>{{ test.subject.name }}</td>
+                                <td>
+                                    {% if test.is_daily %}
+                                        <span class="badge bg-warning">Kundalik</span>
+                                    {% elif test.is_dtm %}
+                                        <span class="badge bg-dark">DTM</span>
+                                    {% elif test.is_comprehensive %}
+                                        <span class="badge bg-danger">Katta</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Oddiy</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if test.start_time %}
+                                        {{ test.start_time.strftime('%H:%M') }} - {{ test.end_time.strftime('%H:%M') }}
+                                    {% else %}
+                                        {{ test.test_date.strftime('%H:%M') }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ test.duration_minutes }} daqiqa</td>
+                                <td>
+                                    {% if test.test_date > current_time %}
+                                        <span class="badge bg-secondary">Kutilmoqda</span>
+                                    {% elif test.end_time and test.end_time <= current_time %}
+                                        <span class="badge bg-danger">Tugagan</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Faol</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if current_user.is_admin %}
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_test', test_id=test.id) }}" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-edit"></i> Tahrirlash
+                                            </a>
+                                            <form method="POST" action="{{ url_for('delete_test', test_id=test.id) }}" class="d-inline" 
+                                                  onsubmit="return confirm('Ushbu testni o\'chirishni istaysizmi? Barcha savollar va natijalar o\'chiriladi!')">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="fas fa-trash"></i> O'chirish
+                                                </button>
+                                            </form>
+                                        </div>
+                                    {% elif test.test_date.date() == current_time.date() and test.is_daily %}
+                                        {% if test.id in user_results %}
+                                            <span class="badge bg-success">Topshirilgan</span>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('register_for_test', test_id=test.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-user-plus"></i> Ro'yxatdan o'tish
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                    {% elif test.id in user_results %}
+                                        <a href="{{ url_for('test_result', result_id=user_results[test.id].id) }}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-eye"></i> Natija
+                                        </a>
+                                    {% elif test.test_date <= current_time and (not test.end_time or test.end_time > current_time) %}
+                                        <a href="{{ url_for('take_test', test_id=test.id) }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-play"></i> Boshlash
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Test haqida ma'lumot</h5>
+            </div>
+            <div class="card-body">
+                {% for test in tests %}
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <h5 class="card-title">{{ test.title }}</h5>
+                    <div>
+                        {% if test.is_daily %}
+                            <span class="badge bg-warning">Kundalik</span>
+                        {% endif %}
+                        {% if test.is_comprehensive %}
+                            <span class="badge bg-danger">Katta test</span>
+                        {% endif %}
+                        {% if test.is_dtm %}
+                            <span class="badge bg-dark">DTM test</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <p class="card-text">
+                    <i class="fas fa-book"></i> {{ test.subject.name }}
+                    <br>
+                    <i class="fas fa-calendar"></i> {{ test.test_date.strftime('%d.%m.%Y') }}
+                    {% if test.start_time and test.end_time %}
+                    <br>
+                    <i class="fas fa-clock"></i> {{ test.start_time.strftime('%H:%M') }} - {{ test.end_time.strftime('%H:%M') }}
+                    {% endif %}
+                    <br>
+                    <i class="fas fa-question-circle"></i> {{ test.questions|length }} savol
+                    {% if test.duration_minutes %}
+                    <br>
+                    <i class="fas fa-hourglass-half"></i> {{ test.duration_minutes }} daqiqa
+                    {% endif %}
+                </p>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    {% if test.id in user_results %}
+                        <div class="text-success">
+                            <i class="fas fa-check-circle"></i> Topshirilgan
+                            <br>
+                            <small>
+                                Ball: {{ user_results[test.id].score }}/{{ user_results[test.id].total_questions }}
+                                ({{ "%.1f"|format((user_results[test.id].score / user_results[test.id].total_questions * 100)) }}%)
+                            </small>
+                        </div>
+                        <a href="{{ url_for('test_result', result_id=user_results[test.id].id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-eye"></i> Natija
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('take_test', test_id=test.id) }}" class="btn btn-primary">
+                            <i class="fas fa-play"></i> Testni boshlash
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% if not tests %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">Hali testlar mavjud emas</h4>
+            <p class="text-muted">Admin testlar qo'shishi kerak</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Test haqida ma'lumot</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-info-circle text-primary"></i> Test turlari:</h6>
+                        <ul class="list-unstyled">
+                            <li><span class="badge bg-warning">Kundalik</span> - Har kuni bitta fan, 30 savol, 1 soat</li>
+                            <li><span class="badge bg-dark">DTM</span> - Haftada 2 marta, 90 savol, 1.5 soat</li>
+                            <li><span class="badge bg-danger">Katta</span> - TDYU kirish imtihonlari</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-bell text-warning"></i> Muhim eslatmalar:</h6>
+                        <ul class="list-unstyled">
+                            <li> Kundalik testlar uchun faqat shu kuni ro'yxatdan o'tish mumkin</li>
+                            <li> Ro'yxatdan o'tgandan keyin kechiksa ham qatnashish mumkin</li>
+                            <li> Vaqt chegarasi har bir o'quvchi uchun bir xil</li>
+                            <li> Sertifikat yuklaganingiz uchun guruhga 10 ball beriladi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

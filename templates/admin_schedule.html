@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}Dars jadvali boshqaruvi{% endblock %}
+
+{% block page_title %}Dars jadvali boshqaruvi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-alt"></i> Dars jadvali</h5>
+            </div>
+            <div class="card-body">
+                <!-- Add Schedule Form -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addScheduleForm">
+                            <i class="fas fa-plus"></i> Yangi jadval qo'shish
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="collapse {% if schedules %}collapse{% else %}show{% endif %}" id="addScheduleForm">
+                    <div class="card card-body bg-light">
+                        <form method="POST" action="{{ url_for('admin_add_schedule') }}">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="group_id" class="form-label">Guruh</label>
+                                        <select class="form-select" id="group_id" name="group_id" required>
+                                            <option value="">Guruhni tanlang</option>
+                                            {% for group in groups %}
+                                            <option value="{{ group.id }}">{{ group.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="subject_id" class="form-label">Fan</label>
+                                        <select class="form-select" id="subject_id" name="subject_id" required>
+                                            <option value="">Fanni tanlang</option>
+                                            {% for subject in subjects %}
+                                            <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="day_of_week" class="form-label">Kun</label>
+                                        <select class="form-select" id="day_of_week" name="day_of_week" required>
+                                            <option value="">Kunni tanlang</option>
+                                            <option value="0">Dushanba</option>
+                                            <option value="1">Seshanba</option>
+                                            <option value="2">Chorshanba</option>
+                                            <option value="3">Payshanba</option>
+                                            <option value="4">Juma</option>
+                                            <option value="5">Shanba</option>
+                                            <option value="6">Yakshanba</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="time_slot" class="form-label">Vaqt oralig'i</label>
+                                        <input type="text" class="form-control" id="time_slot" name="time_slot" 
+                                               placeholder="Masalan: 09:00-10:30" required>
+                                        <div class="form-text">Dars vaqtini kiriting</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="start_time" class="form-label">Boshlanish vaqti</label>
+                                        <input type="time" class="form-control" id="start_time" name="start_time">
+                                        <div class="form-text">Aniq boshlanish vaqti</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="end_time" class="form-label">Tugash vaqti</label>
+                                        <input type="time" class="form-control" id="end_time" name="end_time">
+                                        <div class="form-text">Aniq tugash vaqti</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-end">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save"></i> Saqlash
+                                </button>
+                                <button type="button" class="btn btn-primary ms-2" onclick="addAnotherSchedule()">
+                                    <i class="fas fa-plus"></i> Yana qo'shish
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Group Selection Filter -->
+                <div class="mb-3">
+                    <label for="group_filter" class="form-label">Guruhni tanlang (filter uchun):</label>
+                    <select class="form-select" id="group_filter" onchange="filterSchedule()">
+                        <option value="">Barcha guruhlar</option>
+                        {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Schedule Table -->
+                {% if schedules %}
+                <div class="table-responsive">
+                    <table class="table table-striped" id="scheduleTable">
+                        <thead>
+                            <tr>
+                                <th>Guruh</th>
+                                <th>Fan</th>
+                                <th>Kun</th>
+                                <th>Vaqt</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for schedule in schedules %}
+                            <tr data-group-id="{{ schedule.group.id }}">
+                                <td>{{ schedule.group.name }}</td>
+                                <td>{{ schedule.subject.name }}</td>
+                                <td>
+                                    {% set days = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'] %}
+                                    {{ days[schedule.day_of_week] }}
+                                </td>
+                                <td>{{ schedule.time_slot }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-warning" onclick="editSchedule({{ schedule.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="deleteSchedule({{ schedule.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-calendar-alt fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Dars jadvali mavjud emas</h4>
+                    <p class="text-muted">Yangi dars jadvali qo'shing</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Schedule View -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-calendar-week"></i> Haftalik jadval</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% set days = ['Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba'] %}
+                    {% for day_num in range(7) %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0">{{ days[day_num] }}</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                {% set day_schedules = schedules|selectattr('day_of_week', 'equalto', day_num)|list %}
+                                {% if day_schedules %}
+                                    {% for schedule in day_schedules %}
+                                    <div class="small mb-2 p-2 bg-white rounded">
+                                        <strong>{{ schedule.time_slot }}</strong><br>
+                                        {{ schedule.group.name }} - {{ schedule.subject.name }}
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-muted small mb-0">Darslar yo'q</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterSchedule() {
+    const groupId = document.getElementById('group_filter').value;
+    const rows = document.querySelectorAll('#scheduleTable tbody tr');
+    
+    rows.forEach(row => {
+        if (groupId === '' || row.dataset.groupId === groupId) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function editSchedule(scheduleId) {
+    window.location.href = '/admin/edit_schedule/' + scheduleId;
+}
+
+function deleteSchedule(scheduleId) {
+    if (confirm('Rostdan ham ushbu dars jadvalini o\'chirmoqchimisiz?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/admin/delete_schedule/' + scheduleId;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function addAnotherSchedule() {
+    // Clear form fields
+    document.getElementById('group_id').value = '';
+    document.getElementById('subject_id').value = '';
+    document.getElementById('day_of_week').value = '';
+    document.getElementById('time_slot').value = '';
+    document.getElementById('start_time').value = '';
+    document.getElementById('end_time').value = '';
+    
+    // Focus on first field
+    document.getElementById('group_id').focus();
+    
+    // Keep form open
+    document.getElementById('addScheduleForm').classList.add('show');
+}
+
+// Handle form submission to keep form open
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('#addScheduleForm form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Don't close the form after submission
+            setTimeout(function() {
+                addAnotherSchedule();
+            }, 100);
+        });
+    }
+});
+</script>
+
+{% endblock %}

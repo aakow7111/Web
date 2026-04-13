@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}{{ test.title }} - Test{% endblock %}
+
+{% block page_title %}{{ test.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ test.title }}</h5>
+                    <div>
+                        <span class="badge bg-info">{{ test.subject.name }}</span>
+                        {% if test.is_daily %}
+                            <span class="badge bg-warning">Kundalik test</span>
+                        {% endif %}
+                        {% if test.is_comprehensive %}
+                            <span class="badge bg-danger">Katta test</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('submit_test', test_id=test.id) }}">
+                    <div class="mb-3">
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" style="width: 0%" id="progressBar"></div>
+                        </div>
+                        <small class="text-muted">Savol: <span id="currentQuestion">1</span> / {{ questions|length }}</small>
+                    </div>
+                    
+                    {% for question in questions %}
+                    <div class="question-container mb-4" id="question{{ loop.index }}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6>Savol {{ loop.index }}</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">{{ question.question_text }}</p>
+                                
+                                <div class="options-container">
+                                    {% set options = ['A', 'B', 'C', 'D'] %}
+                                    {% set option_texts = question.options.split('|') %}
+                                    {% for option in options %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" 
+                                               name="question_{{ question.id }}" 
+                                               id="question_{{ question.id }}_option_{{ option }}" 
+                                               value="{{ option }}"
+                                               onchange="updateProgress()">
+                                        <label class="form-check-label" 
+                                               for="question_{{ question.id }}_option_{{ option }}">
+                                            <strong>{{ option }}.</strong> {{ option_texts[loop.index0] }}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" onclick="previousQuestion()">
+                            <i class="fas fa-arrow-left"></i> Orqaga
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check"></i> Testni tugatish
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="nextQuestion()">
+                            Keying <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Question Navigation -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">Savollar navigatori</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="question-navigation" id="questionNavigation">
+                            {% for question in questions %}
+                            <button type="button" 
+                                    class="btn btn-sm question-nav-btn m-1" 
+                                    id="nav-question{{ loop.index }}" 
+                                    onclick="goToQuestion({{ loop.index }})"
+                                    data-question="{{ loop.index }}">
+                                {{ loop.index }}
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentQuestion = 1;
+const totalQuestions = {{ questions|length }};
+const isDtmTest = {{ 'false' if test.is_daily else 'true' }};
+
+function showQuestion(questionNum) {
+    // Hide all questions
+    document.querySelectorAll('.question-container').forEach(q => {
+        q.style.display = 'none';
+    });
+    
+    // Show current question
+    document.getElementById('question' + questionNum).style.display = 'block';
+    
+    // Update progress
+    updateProgress();
+}
+
+function nextQuestion() {
+    if (currentQuestion < totalQuestions) {
+        currentQuestion++;
+        showQuestion(currentQuestion);
+    }
+}
+
+function previousQuestion() {
+    if (currentQuestion > 1) {
+        currentQuestion--;
+        showQuestion(currentQuestion);
+    }
+}
+
+function updateProgress() {
+    // Count answered questions and update navigation colors
+    let answered = 0;
+    for (let i = 1; i <= totalQuestions; i++) {
+        const questionContainer = document.getElementById('question' + i);
+        if (questionContainer) {
+            const selectedOption = questionContainer.querySelector('input[type="radio"]:checked');
+            const navButton = document.getElementById('nav-question' + i);
+            
+            if (selectedOption) {
+                answered++;
+                // Mark as answered (green)
+                if (navButton) {
+                    navButton.classList.remove('btn-danger');
+                    navButton.classList.add('btn-success');
+                }
+            } else {
+                // Mark as unanswered (red)
+                if (navButton) {
+                    navButton.classList.remove('btn-success');
+                    navButton.classList.add('btn-danger');
+                }
+            }
+        }
+    }
+    
+    // Update progress bar
+    const percentage = (answered / totalQuestions) * 100;
+    document.getElementById('progressBar').style.width = percentage + '%';
+    document.getElementById('currentQuestion').textContent = answered;
+}
+
+function goToQuestion(questionNum) {
+    if (questionNum >= 1 && questionNum <= totalQuestions) {
+        currentQuestion = questionNum;
+        showQuestion(questionNum);
+    }
+}
+
+function checkTestEndTime() {
+    if (isDtmTest) {
+        const now = new Date();
+        const endTime = new Date();
+        endTime.setHours(20, 0, 0, 0); // 20:00
+        
+        if (now >= endTime) {
+            // Auto-submit test
+            alert('Test vaqti tugadi! Test avtomatik ravishda topshirilmoqda...');
+            document.querySelector('form').submit();
+        } else {
+            // Show remaining time
+            const remainingTime = endTime - now;
+            const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+            const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+            
+            // Update timer display if exists
+            const timerElement = document.getElementById('testTimer');
+            if (timerElement) {
+                timerElement.textContent = `Qolgan vaqt: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+    }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    showQuestion(0);
+});
+
+// Add keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight') {
+        nextQuestion();
+    } else if (e.key === 'ArrowLeft') {
+        previousQuestion();
+    }
+});
+</script>
+{% endblock %}

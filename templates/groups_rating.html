@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Guruhlar reytingi{% endblock %}
+
+{% block page_title %}Guruhlar reytingi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-trophy"></i> Guruhlar reytingi
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if group_stats %}
+                    {% for stat in group_stats %}
+                    <div class="group-rating-item {% if loop.first %}top-group{% endif %}">
+                        <div class="row align-items-center">
+                            <div class="col-md-1 text-center">
+                                {% if loop.first %}
+                                    <i class="fas fa-trophy fa-3x text-warning"></i>
+                                {% elif loop.index == 2 %}
+                                    <i class="fas fa-medal fa-2x text-secondary"></i>
+                                {% elif loop.index == 3 %}
+                                    <i class="fas fa-medal fa-2x" style="color: #cd7f32;"></i>
+                                {% else %}
+                                    <h1 class="text-muted">{{ loop.index }}</h1>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <h4>{{ stat.group.name }}</h4>
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-users"></i> 
+                                    {{ stat.student_count }} o'quvchi
+                                </p>
+                                <p class="mb-1 text-muted">
+                                    <i class="fas fa-clipboard-list"></i> 
+                                    {{ stat.total_tests }} test
+                                </p>
+                                <p class="mb-0 text-muted">
+                                    <i class="fas fa-chart-line"></i> 
+                                    O'rtacha foiz: {{ stat.avg_percentage }}%
+                                </p>
+                            </div>
+                            <div class="col-md-5 text-end">
+                                <div class="progress mb-2" style="height: 25px;">
+                                    <div class="progress-bar {% if stat.avg_percentage >= 80 %}bg-success{% elif stat.avg_percentage >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                         style="width: {{ stat.avg_percentage }}%">
+                                        {{ stat.avg_percentage }}%
+                                    </div>
+                                </div>
+                                {% if loop.first %}
+                                    <small class="text-warning">
+                                        <i class="fas fa-star"></i> Eng yaxshi guruh
+                                    </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Hali guruhlar mavjud emas</h4>
+                        <p class="text-muted">Admin guruhlar qo'shishi kerak</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Reyting haqida</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-star"></i> Ballar qanday hisoblanadi?</h6>
+                        <ul>
+                            <li>Kundalik huquq testlarida 80% dan yuqori natija ko'rsatgan o'quvchilar guruhiga ball qo'shadi</li>
+                            <li>Ballar testdagi to'g'ri javoblar soniga teng</li>
+                            <li>Guruhlar o'rtasida musobaqa shaklida reyting tuziladi</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-trophy"></i> Mukofotlar</h6>
+                        <ul>
+                            <li>Eng yaxshi 3 guruh maxsus sertifikatlar bilan taqdirlanadi</li>
+                            <li>G'olib guruh a'zolariga qo'shimma imtiyozlar beriladi</li>
+                            <li>Oyning eng faol guruhini e'tirof etish marosimi</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
