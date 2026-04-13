@@ -10,12 +10,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///education.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# SQLAlchemy 2.0 compatibility
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'echo': False,
-    'pool_pre_ping': True
-}
-
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -27,7 +21,6 @@ def load_user(user_id):
 
 # Database Models
 class User(db.Model, UserMixin):
-    __tablename__ = 'user'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -39,22 +32,19 @@ class User(db.Model, UserMixin):
     group_id = db.Column(db.Integer, db.ForeignKey('group.id'))
     
     # Relationships
-    group = db.relationship('Group', backref=db.backref('students', lazy=True))
+    group = db.relationship('Group', backref='students')
 
 class Group(db.Model):
-    __tablename__ = 'group'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
     total_score = db.Column(db.Integer, default=0)
 
 class Subject(db.Model):
-    __tablename__ = 'subject'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
 
 class Test(db.Model):
-    __tablename__ = 'test'
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=True)
