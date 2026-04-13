@@ -87,7 +87,7 @@ def admin_dashboard():
     total_groups = Group.query.count()
     total_tests = Test.query.count()
     
-    return render_template('admin_dashboard.html',
+    return render_template('simple_admin_dashboard.html',
                          total_students=total_students,
                          total_groups=total_groups,
                          total_tests=total_tests)
