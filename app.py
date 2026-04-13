@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
-from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super-secret-key-for-sessions-to-work'
@@ -356,28 +355,46 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # Create admin user if not exists
-        admin = User.query.filter_by(username='AkmalJaxonkulov').first()
-        if not admin:
-            default_group = Group.query.filter_by(id=1).first()
-            if not default_group:
-                default_group = Group(id=1, name='Default', total_score=0)
-                db.session.add(default_group)
-                db.session.flush()
-            
-            admin = User(
-                username='AkmalJaxonkulov',
-                password_hash=generate_password_hash('Akmal1221'),
-                first_name='Akmal',
-                last_name='Jaxonkulov',
-                group_id=1,
-                is_admin=True
-            )
-            db.session.add(admin)
-            db.session.commit()
+    print("Starting application...")
+    print(f"Python version: {os.sys.version}")
+    print(f"Current directory: {os.getcwd()}")
     
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    try:
+        with app.app_context():
+            print("Creating database tables...")
+            db.create_all()
+            print("Database tables created successfully!")
+            
+            # Create admin user if not exists
+            admin = User.query.filter_by(username='AkmalJaxonkulov').first()
+            if not admin:
+                print("Creating admin user...")
+                default_group = Group.query.filter_by(id=1).first()
+                if not default_group:
+                    print("Creating default group...")
+                    default_group = Group(id=1, name='Default', total_score=0)
+                    db.session.add(default_group)
+                    db.session.flush()
+                
+                admin = User(
+                    username='AkmalJaxonkulov',
+                    password_hash=generate_password_hash('Akmal1221'),
+                    first_name='Akmal',
+                    last_name='Jaxonkulov',
+                    group_id=1,
+                    is_admin=True
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin user created successfully!")
+            else:
+                print("Admin user already exists!")
+        
+        port = int(os.getenv('PORT', 5000))
+        print(f"Starting Flask app on port {port}...")
+        app.run(host='0.0.0.0', port=port, debug=True)
+    except Exception as e:
+        print(f"Error during startup: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
