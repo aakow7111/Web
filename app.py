@@ -227,12 +227,132 @@ def admin_students():
     groups = Group.query.all()
     return render_template('admin_students.html', students=students, groups=groups)
 
+@app.route('/admin/add_student', methods=['POST'])
+def admin_add_student():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
+    first_name = request.form.get('first_name', '').strip()
+    last_name = request.form.get('last_name', '').strip()
+    group_id = request.form.get('group_id', type=int)
+    
+    # Check if username already exists
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        flash("Bu login allaqachon mavjud!", 'error')
+        return redirect(url_for('admin_students'))
+    
+    # Create new student
+    new_student = User(
+        username=username,
+        password_hash=generate_password_hash(password),
+        first_name=first_name,
+        last_name=last_name,
+        group_id=group_id,
+        is_admin=False
+    )
+    db.session.add(new_student)
+    db.session.commit()
+    
+    flash("O'quvchi muvaffaqiyatli qo'shildi!", 'success')
+    return redirect(url_for('admin_students'))
+
+@app.route('/admin/edit_student/<int:student_id>', methods=['GET', 'POST'])
+def admin_edit_student(student_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    student = User.query.get_or_404(student_id)
+    groups = Group.query.all()
+    
+    if request.method == 'POST':
+        student.first_name = request.form.get('first_name', '').strip()
+        student.last_name = request.form.get('last_name', '').strip()
+        student.group_id = request.form.get('group_id', type=int)
+        
+        if request.form.get('password'):
+            student.password_hash = generate_password_hash(request.form.get('password'))
+        
+        db.session.commit()
+        flash("O'quvchi ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_students'))
+    
+    return render_template('edit_student.html', student=student, groups=groups)
+
+@app.route('/admin/delete_student/<int:student_id>')
+def admin_delete_student(student_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    student = User.query.get_or_404(student_id)
+    db.session.delete(student)
+    db.session.commit()
+    
+    flash("O'quvchi o'chirildi!", 'success')
+    return redirect(url_for('admin_students'))
+
 @app.route('/admin/groups')
 def admin_groups():
     if not session.get('logged_in', False) or not session.get('is_admin', False):
         return redirect(url_for('login'))
     groups = Group.query.all()
     return render_template('admin_groups.html', groups=groups)
+
+@app.route('/admin/add_group', methods=['POST'])
+def admin_add_group():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    name = request.form.get('name', '').strip()
+    
+    # Check if group already exists
+    existing_group = Group.query.filter_by(name=name).first()
+    if existing_group:
+        flash("Bu guruh nomi allaqachon mavjud!", 'error')
+        return redirect(url_for('admin_groups'))
+    
+    # Create new group
+    new_group = Group(name=name, total_score=0)
+    db.session.add(new_group)
+    db.session.commit()
+    
+    flash("Guruh muvaffaqiyatli qo'shildi!", 'success')
+    return redirect(url_for('admin_groups'))
+
+@app.route('/admin/edit_group/<int:group_id>', methods=['GET', 'POST'])
+def admin_edit_group(group_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    group = Group.query.get_or_404(group_id)
+    
+    if request.method == 'POST':
+        group.name = request.form.get('name', '').strip()
+        db.session.commit()
+        flash("Guruh ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_groups'))
+    
+    return render_template('edit_group.html', group=group)
+
+@app.route('/admin/delete_group/<int:group_id>')
+def admin_delete_group(group_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    group = Group.query.get_or_404(group_id)
+    
+    # Check if group has students
+    if group.students:
+        flash("Bu guruhda o'quvchilar bor, avval ularni o'chirishingiz kerak!", 'error')
+        return redirect(url_for('admin_groups'))
+    
+    db.session.delete(group)
+    db.session.commit()
+    
+    flash("Guruh o'chirildi!", 'success')
+    return redirect(url_for('admin_groups'))
 
 @app.route('/admin/subjects')
 def admin_subjects():
