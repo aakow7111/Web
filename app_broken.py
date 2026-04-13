@@ -102,6 +102,7 @@ if __name__ == '__main__':
     print("Starting application...")
     print(f"Python version: {os.sys.version}")
     print(f"Current directory: {os.getcwd()}")
+    print(f"Environment variables: {dict(os.environ)}")
     
     try:
         with app.app_context():
