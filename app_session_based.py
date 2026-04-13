@@ -5,9 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
-
-# CRITICAL: Set secret key for sessions to work
-app.config['SECRET_KEY'] = 'super-secret-key-for-sessions-to-work'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-here')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///education.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -93,14 +91,10 @@ def login():
             session['user_id'] = admin_user.id
             session['username'] = admin_user.username
             session['is_admin'] = admin_user.is_admin
-            session['logged_in'] = True  # Additional flag
+            session.permanent = True
             
-            print(f"Session created: user_id={session.get('user_id')}, username={session.get('username')}")
+            print(f"Session created: {session}")
             print("Redirecting to admin dashboard...")
-            
-            # Test session
-            print(f"Session test: {dict(session)}")
-            
             return redirect(url_for('admin_dashboard'))
         
         print("Login failed!")
@@ -110,11 +104,9 @@ def login():
 
 @app.route('/admin')
 def admin_dashboard():
-    print(f"Admin dashboard accessed. Session: {dict(session)}")
-    
     # Check if user is logged in via session
-    if not session.get('logged_in', False):
-        print("User not logged in, redirecting to login")
+    if 'user_id' not in session:
+        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     if not session.get('is_admin', False):
@@ -127,8 +119,6 @@ def admin_dashboard():
     total_groups = Group.query.count()
     total_tests = Test.query.count()
     
-    print(f"Stats: students={total_students}, groups={total_groups}, tests={total_tests}")
-    
     return render_template('simple_admin_dashboard.html',
                          total_students=total_students,
                          total_groups=total_groups,
@@ -140,15 +130,10 @@ def logout():
     print("Session cleared, redirecting to login")
     return redirect(url_for('login'))
 
-@app.route('/test')
-def test():
-    return f"Test route - Session: {dict(session)}"
-
 if __name__ == '__main__':
     print("Starting application...")
     print(f"Python version: {os.sys.version}")
     print(f"Current directory: {os.getcwd()}")
-    print(f"SECRET_KEY: {app.config['SECRET_KEY']}")
     
     try:
         with app.app_context():
@@ -179,12 +164,20 @@ if __name__ == '__main__':
                 db.session.add(admin)
                 db.session.commit()
                 print("Admin user created successfully!")
+                print("Admin details:")
+                print(f"  Username: {admin.username}")
+                print(f"  Password: Akmal1221")
+                print(f"  Is Admin: {admin.is_admin}")
             else:
                 print("Admin user already exists!")
+                print(f"Admin details:")
+                print(f"  Username: {admin.username}")
+                print(f"  Is Admin: {admin.is_admin}")
+                print(f"  Password hash: {admin.password_hash[:20]}...")
         
         port = int(os.getenv('PORT', 5000))
         print(f"Starting Flask app on port {port}...")
-        app.run(host='0.0.0.0', port=port, debug=True)
+        app.run(host='0.0.0.0', port=port)
     except Exception as e:
         print(f"Error during startup: {e}")
         import traceback
