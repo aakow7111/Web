@@ -99,22 +99,40 @@ def logout():
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-        
-        # Create admin user if not exists
-        admin = User.query.filter_by(username='AkmalJaxonkulov').first()
-        if not admin:
-            admin = User(
-                username='AkmalJaxonkulov',
-                password_hash=generate_password_hash('Akmal1221'),
-                first_name='Akmal',
-                last_name='Jaxonkulov',
-                group_id=1,
-                is_admin=True
-            )
-            db.session.add(admin)
-            db.session.commit()
+    print("Starting application...")
+    print(f"Python version: {os.sys.version}")
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Environment variables: {dict(os.environ)}")
     
-    port = int(os.getenv('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    try:
+        with app.app_context():
+            print("Creating database tables...")
+            db.create_all()
+            print("Database tables created successfully!")
+            
+            # Create admin user if not exists
+            admin = User.query.filter_by(username='AkmalJaxonkulov').first()
+            if not admin:
+                print("Creating admin user...")
+                admin = User(
+                    username='AkmalJaxonkulov',
+                    password_hash=generate_password_hash('Akmal1221'),
+                    first_name='Akmal',
+                    last_name='Jaxonkulov',
+                    group_id=1,
+                    is_admin=True
+                )
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin user created successfully!")
+            else:
+                print("Admin user already exists!")
+        
+        port = int(os.getenv('PORT', 5000))
+        print(f"Starting Flask app on port {port}...")
+        app.run(host='0.0.0.0', port=port)
+    except Exception as e:
+        print(f"Error during startup: {e}")
+        import traceback
+        traceback.print_exc()
+        raise
