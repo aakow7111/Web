@@ -204,46 +204,47 @@ def admin_dashboard():
                          recent_results=recent_results)
 
 @app.route('/admin/students')
-@login_required
-@admin_required
 def admin_students():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
     students = User.query.filter_by(is_admin=False).all()
     groups = Group.query.all()
     return render_template('admin_students.html', students=students, groups=groups)
 
 @app.route('/admin/groups')
-@login_required
-@admin_required
 def admin_groups():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
     groups = Group.query.all()
     return render_template('admin_groups.html', groups=groups)
 
 @app.route('/admin/subjects')
-@login_required
-@admin_required
 def admin_subjects():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
     subjects = Subject.query.all()
     return render_template('admin_subjects.html', subjects=subjects)
 
 @app.route('/admin/tests')
-@login_required
-@admin_required
 def admin_tests():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
     tests = Test.query.all()
     subjects = Subject.query.all()
     return render_template('admin_tests.html', tests=tests, subjects=subjects)
 
 @app.route('/admin/schedule')
-@login_required
-@admin_required
 def admin_schedule():
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
     schedules = Schedule.query.all()
     groups = Group.query.all()
     return render_template('admin_schedule.html', schedules=schedules, groups=groups)
 
 @app.route('/student/dashboard')
-@login_required
 def student_dashboard():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
     recent_results = TestResult.query.filter_by(user_id=user.id).order_by(TestResult.taken_at.desc()).limit(5).all()
     certificates = Certificate.query.filter_by(user_id=user.id).all()
@@ -256,14 +257,16 @@ def student_dashboard():
                          difficult_topics=difficult_topics)
 
 @app.route('/subjects')
-@login_required
 def subjects():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     subjects = Subject.query.all()
     return render_template('subjects.html', subjects=subjects)
 
 @app.route('/subject/<int:subject_id>')
-@login_required
 def subject_detail(subject_id):
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     subject = Subject.query.get_or_404(subject_id)
     topics = Topic.query.filter_by(subject_id=subject_id).all()
     user = User.query.get(session['user_id'])
@@ -277,24 +280,27 @@ def subject_detail(subject_id):
                          difficult_topic_ids=difficult_topic_ids)
 
 @app.route('/tests')
-@login_required
 def tests():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     tests = Test.query.all()
     user_results = {result.test_id: result for result in TestResult.query.filter_by(user_id=session['user_id']).all()}
     
     return render_template('tests.html', tests=tests, user_results=user_results)
 
 @app.route('/take_test/<int:test_id>')
-@login_required
 def take_test(test_id):
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     test = Test.query.get_or_404(test_id)
     questions = Question.query.filter_by(test_id=test_id).all()
     
     return render_template('take_test.html', test=test, questions=questions)
 
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
-@login_required
 def submit_test(test_id):
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     test = Test.query.get_or_404(test_id)
     questions = Question.query.filter_by(test_id=test_id).all()
     
@@ -317,14 +323,16 @@ def submit_test(test_id):
     return redirect(url_for('test_result', result_id=result.id))
 
 @app.route('/test_result/<int:result_id>')
-@login_required
 def test_result(result_id):
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     result = TestResult.query.get_or_404(result_id)
     return render_template('test_result.html', result=result)
 
 @app.route('/mark_difficult/<int:topic_id>')
-@login_required
 def mark_difficult(topic_id):
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     user_id = session['user_id']
     
     # Check if already marked
@@ -342,8 +350,9 @@ def mark_difficult(topic_id):
     return redirect(request.referrer)
 
 @app.route('/schedule')
-@login_required
 def schedule():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
     user = User.query.get(session['user_id'])
     schedules = Schedule.query.filter_by(group_id=user.group_id).all()
     
