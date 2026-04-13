@@ -70,7 +70,7 @@
             </div>
         {% endif %}
         
-        <form method="POST">
+        <form method="POST" action="{{ url_for('login') }}">
             <div class="mb-3">
                 <label for="username" class="form-label">Login</label>
                 <div class="input-group">
