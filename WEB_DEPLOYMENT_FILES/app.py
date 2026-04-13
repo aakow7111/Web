@@ -1,10 +1,12 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
 app = Flask(__name__)
+
+# CRITICAL: Set secret key for sessions to work
 app.config['SECRET_KEY'] = 'super-secret-key-for-sessions-to-work'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///education.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -56,113 +58,19 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        try:
-            # Get form data
-            username = request.form.get('username', '').strip()
-            password = request.form.get('password', '').strip()
-            
-            print(f"Login attempt: username='{username}', password_length={len(password)}")
-            
-            # Simple hardcoded admin check
-            if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
-                print("Admin credentials correct!")
-                
-                # Create admin user if not exists
-                admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
-                if not admin_user:
-                    print("Creating admin user...")
-                    default_group = Group.query.filter_by(id=1).first()
-                    if not default_group:
-                        default_group = Group(id=1, name='Default', total_score=0)
-                        db.session.add(default_group)
-                        db.session.flush()
-                    
-                    admin_user = User(
-                        username='AkmalJaxonkulov',
-                        password_hash=generate_password_hash('Akmal1221'),
-                        first_name='Akmal',
-                        last_name='Jaxonkulov',
-                        group_id=1,
-                        is_admin=True
-                    )
-                    db.session.add(admin_user)
-                    db.session.commit()
-                    print("Admin user created!")
-                
-                # Store in session
-                session.clear()
-                session['user_id'] = admin_user.id
-                session['username'] = admin_user.username
-                session['is_admin'] = admin_user.is_admin
-                session['logged_in'] = True
-                session.permanent = True
-                
-                print(f"Session data: {dict(session)}")
-                print("Redirecting to admin dashboard...")
-                
-                return redirect(url_for('admin_dashboard'))
-            else:
-                print("Invalid credentials!")
-                return render_template('login.html', error="Login yoki parol noto'g'ri!")
-                
-        except Exception as e:
-            print(f"Login error: {e}")
-            import traceback
-            traceback.print_exc()
-            return render_template('login.html', error="Xatolik yuz berdi!")
-    
-    return render_template('login.html')
-
-@app.route('/admin')
-def admin_dashboard():
-    print(f"Admin dashboard accessed. Session: {dict(session)}")
-    
-    # Check session
-    if not session.get('logged_in', False):
-        print("Not logged in, redirecting to login")
-        return redirect(url_for('login'))
-    
-    if not session.get('is_admin', False):
-        print("Not admin, redirecting to login")
-        return redirect(url_for('login'))
-    
-    try:
-        total_students = User.query.filter_by(is_admin=False).count()
-        total_groups = Group.query.count()
-        total_tests = Test.query.count()
+        username = request.form.get('username')
+        password = request.form.get('password')
         
-        print(f"Stats calculated: students={total_students}, groups={total_groups}, tests={total_tests}")
+        print(f"Login attempt: username={username}")
         
-        return render_template('simple_admin_dashboard.html',
-                             total_students=total_students,
-                             total_groups=total_groups,
-                             total_tests=total_tests)
-    except Exception as e:
-        print(f"Dashboard error: {e}")
-        return render_template('simple_admin_dashboard.html',
-                             total_students=0,
-                             total_groups=0,
-                             total_tests=0)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    print("Logged out, session cleared")
-    return redirect(url_for('login'))
-
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    try:
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '').strip()
-        
-        print(f"API Login attempt: username='{username}'")
-        
+        # Simple hardcoded admin login
         if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
+            print("Admin login successful!")
+            
             # Create admin user if not exists
             admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
             if not admin_user:
+                print("Creating admin user...")
                 default_group = Group.query.filter_by(id=1).first()
                 if not default_group:
                     default_group = Group(id=1, name='Default', total_score=0)
@@ -179,27 +87,68 @@ def api_login():
                 )
                 db.session.add(admin_user)
                 db.session.commit()
+                print("Admin user created!")
             
-            # Store in session
-            session.clear()
+            # Store user in session
             session['user_id'] = admin_user.id
             session['username'] = admin_user.username
             session['is_admin'] = admin_user.is_admin
-            session['logged_in'] = True
-            session.permanent = True
+            session['logged_in'] = True  # Additional flag
             
-            return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
-        else:
-            return jsonify({'success': False, 'error': 'Invalid credentials'})
+            print(f"Session created: user_id={session.get('user_id')}, username={session.get('username')}")
+            print("Redirecting to admin dashboard...")
             
-    except Exception as e:
-        print(f"API Login error: {e}")
-        return jsonify({'success': False, 'error': 'Server error'})
+            # Test session
+            print(f"Session test: {dict(session)}")
+            
+            return redirect(url_for('admin_dashboard'))
+        
+        print("Login failed!")
+        return render_template('login.html', error="Login yoki parol noto'g'ri!")
+    
+    return render_template('login.html')
+
+@app.route('/admin')
+def admin_dashboard():
+    print(f"Admin dashboard accessed. Session: {dict(session)}")
+    
+    # Check if user is logged in via session
+    if not session.get('logged_in', False):
+        print("User not logged in, redirecting to login")
+        return redirect(url_for('login'))
+    
+    if not session.get('is_admin', False):
+        print("User is not admin, redirecting to login")
+        return redirect(url_for('login'))
+    
+    print(f"Admin dashboard accessed by: {session.get('username')}")
+    
+    total_students = User.query.filter_by(is_admin=False).count()
+    total_groups = Group.query.count()
+    total_tests = Test.query.count()
+    
+    print(f"Stats: students={total_students}, groups={total_groups}, tests={total_tests}")
+    
+    return render_template('simple_admin_dashboard.html',
+                         total_students=total_students,
+                         total_groups=total_groups,
+                         total_tests=total_tests)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    print("Session cleared, redirecting to login")
+    return redirect(url_for('login'))
+
+@app.route('/test')
+def test():
+    return f"Test route - Session: {dict(session)}"
 
 if __name__ == '__main__':
     print("Starting application...")
     print(f"Python version: {os.sys.version}")
     print(f"Current directory: {os.getcwd()}")
+    print(f"SECRET_KEY: {app.config['SECRET_KEY']}")
     
     try:
         with app.app_context():
@@ -211,6 +160,7 @@ if __name__ == '__main__':
             admin = User.query.filter_by(username='AkmalJaxonkulov').first()
             if not admin:
                 print("Creating admin user...")
+                # First create a default group if it doesn't exist
                 default_group = Group.query.filter_by(id=1).first()
                 if not default_group:
                     print("Creating default group...")
