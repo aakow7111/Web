@@ -64,16 +64,33 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form.get('username')
+        password = request.form.get('password')
         
-        user = User.query.filter_by(username='AkmalJaxonkulov').first()
+        print(f"Login attempt: username={username}")
         
-        if user and check_password_hash(user.password_hash, 'Akmal1221'):
-            login_user(user)
-            return redirect(url_for('admin_dashboard'))
-        else:
-            flash('Login yoki parol noto\'g\'ri!', 'danger')
+        # Check if admin user exists
+        admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
+        print(f"Admin user found: {admin_user is not None}")
+        
+        if admin_user:
+            print(f"Admin user details: {admin_user.username}, is_admin: {admin_user.is_admin}")
+        
+        # Try to authenticate
+        user = User.query.filter_by(username=username).first()
+        
+        if user:
+            print(f"User found: {user.username}")
+            password_check = check_password_hash(user.password_hash, password)
+            print(f"Password check result: {password_check}")
+            
+            if password_check:
+                print("Login successful!")
+                login_user(user)
+                return redirect(url_for('admin_dashboard'))
+        
+        print("Login failed!")
+        flash('Login yoki parol noto\'g\'ri!', 'danger')
     
     return render_template('login.html')
 
@@ -113,6 +130,14 @@ if __name__ == '__main__':
             admin = User.query.filter_by(username='AkmalJaxonkulov').first()
             if not admin:
                 print("Creating admin user...")
+                # First create a default group if it doesn't exist
+                default_group = Group.query.filter_by(id=1).first()
+                if not default_group:
+                    print("Creating default group...")
+                    default_group = Group(id=1, name='Default', total_score=0)
+                    db.session.add(default_group)
+                    db.session.flush()
+                
                 admin = User(
                     username='AkmalJaxonkulov',
                     password_hash=generate_password_hash('Akmal1221'),
@@ -124,8 +149,16 @@ if __name__ == '__main__':
                 db.session.add(admin)
                 db.session.commit()
                 print("Admin user created successfully!")
+                print("Admin details:")
+                print(f"  Username: {admin.username}")
+                print(f"  Password: Akmal1221")
+                print(f"  Is Admin: {admin.is_admin}")
             else:
                 print("Admin user already exists!")
+                print(f"Admin details:")
+                print(f"  Username: {admin.username}")
+                print(f"  Is Admin: {admin.is_admin}")
+                print(f"  Password hash: {admin.password_hash[:20]}...")
         
         port = int(os.getenv('PORT', 5000))
         print(f"Starting Flask app on port {port}...")
