@@ -125,9 +125,15 @@ def login():
     return render_template('login.html')
 
 @app.route('/admin')
-@login_required
 def admin_dashboard():
-    if not current_user.is_admin:
+    # Check if user is logged in
+    try:
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        
+        if not current_user.is_admin:
+            return redirect(url_for('login'))
+    except:
         return redirect(url_for('login'))
     
     total_students = User.query.filter_by(is_admin=False).count()
@@ -140,9 +146,11 @@ def admin_dashboard():
                          total_tests=total_tests)
 
 @app.route('/logout')
-@login_required
 def logout():
-    logout_user()
+    try:
+        logout_user()
+    except:
+        pass
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
