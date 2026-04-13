@@ -37,15 +37,12 @@
                                 <td>{{ subject.tests|length }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ url_for('admin_edit_subject', subject_id=subject.id) }}" class="btn btn-outline-warning">
-                                            <i class="fas fa-edit"></i> Tahrirlash
-                                        </a>
-                                        <form method="POST" action="{{ url_for('admin_delete_subject', subject_id=subject.id) }}" class="d-inline" 
-                                              onsubmit="return confirm('Ushbu fanni o\'chirishni istaysizmi? Barcha mavzular ham o\'chiriladi!')">
-                                            <button type="submit" class="btn btn-outline-danger">
-                                                <i class="fas fa-trash"></i> O'chirish
-                                            </button>
-                                        </form>
+                                        <button class="btn btn-outline-warning" onclick="editSubject({{ subject.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="deleteSubject({{ subject.id }})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -83,6 +80,18 @@
                     <div class="mb-3">
                         <label for="description" class="form-label">Tavsif</label>
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="start_time" class="form-label">Boshlanish vaqti</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time">
+                        <div class="form-text">Fan boshlanish vaqti (ixtiyoriy)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="end_time" class="form-label">Tugash vaqti</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time">
+                        <div class="form-text">Fan tugash vaqti (ixtiyoriy)</div>
                     </div>
                 </div>
                 <div class="modal-footer">

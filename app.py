@@ -1,8 +1,9 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from functools import wraps
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super-secret-key-for-sessions-to-work'
@@ -36,6 +37,15 @@ class Subject(db.Model):
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
 
+class Topic(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text)
+    video_url = db.Column(db.String(500))
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    
+    subject = db.relationship('Subject', backref=db.backref('topics', lazy=True))
+
 class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -48,6 +58,76 @@ class Test(db.Model):
     end_time = db.Column(db.DateTime)
     duration_minutes = db.Column(db.Integer, default=60)
 
+class Question(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    option_a = db.Column(db.String(500), nullable=False)
+    option_b = db.Column(db.String(500), nullable=False)
+    option_c = db.Column(db.String(500), nullable=False)
+    option_d = db.Column(db.String(500), nullable=False)
+    correct_answer = db.Column(db.String(1), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    
+    test = db.relationship('Test', backref=db.backref('questions', lazy=True))
+
+class TestResult(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    score = db.Column(db.Integer, nullable=False)
+    total_questions = db.Column(db.Integer, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    taken_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('test_results', lazy=True))
+    test = db.relationship('Test', backref=db.backref('results', lazy=True))
+
+class Schedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    subject_name = db.Column(db.String(100), nullable=False)
+    date = db.Column(db.DateTime, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('group.id'), nullable=False)
+    
+    group = db.relationship('Group', backref=db.backref('schedules', lazy=True))
+
+class Certificate(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    file_path = db.Column(db.String(500))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    issued_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('certificates', lazy=True))
+
+class DifficultTopic(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    topic_id = db.Column(db.Integer, db.ForeignKey('topic.id'), nullable=False)
+    marked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('difficult_topics', lazy=True))
+    topic = db.relationship('Topic', backref=db.backref('marked_by', lazy=True))
+
+# Decorators
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in', False):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('is_admin', False):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 # Routes
 @app.route('/')
 def index():
@@ -56,108 +136,8 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        try:
-            # Get form data
-            username = request.form.get('username', '').strip()
-            password = request.form.get('password', '').strip()
-            
-            print(f"Login attempt: username='{username}', password_length={len(password)}")
-            
-            # Simple hardcoded admin check
-            if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
-                print("Admin credentials correct!")
-                
-                # Create admin user if not exists
-                admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
-                if not admin_user:
-                    print("Creating admin user...")
-                    default_group = Group.query.filter_by(id=1).first()
-                    if not default_group:
-                        default_group = Group(id=1, name='Default', total_score=0)
-                        db.session.add(default_group)
-                        db.session.flush()
-                    
-                    admin_user = User(
-                        username='AkmalJaxonkulov',
-                        password_hash=generate_password_hash('Akmal1221'),
-                        first_name='Akmal',
-                        last_name='Jaxonkulov',
-                        group_id=1,
-                        is_admin=True
-                    )
-                    db.session.add(admin_user)
-                    db.session.commit()
-                    print("Admin user created!")
-                
-                # Store in session
-                session.clear()
-                session['user_id'] = admin_user.id
-                session['username'] = admin_user.username
-                session['is_admin'] = admin_user.is_admin
-                session['logged_in'] = True
-                session.permanent = True
-                
-                print(f"Session data: {dict(session)}")
-                print("Redirecting to admin dashboard...")
-                
-                return redirect(url_for('admin_dashboard'))
-            else:
-                print("Invalid credentials!")
-                return render_template('login.html', error="Login yoki parol noto'g'ri!")
-                
-        except Exception as e:
-            print(f"Login error: {e}")
-            import traceback
-            traceback.print_exc()
-            return render_template('login.html', error="Xatolik yuz berdi!")
-    
-    return render_template('login.html')
-
-@app.route('/admin')
-def admin_dashboard():
-    print(f"Admin dashboard accessed. Session: {dict(session)}")
-    
-    # Check session
-    if not session.get('logged_in', False):
-        print("Not logged in, redirecting to login")
-        return redirect(url_for('login'))
-    
-    if not session.get('is_admin', False):
-        print("Not admin, redirecting to login")
-        return redirect(url_for('login'))
-    
-    try:
-        total_students = User.query.filter_by(is_admin=False).count()
-        total_groups = Group.query.count()
-        total_tests = Test.query.count()
-        
-        print(f"Stats calculated: students={total_students}, groups={total_groups}, tests={total_tests}")
-        
-        return render_template('simple_admin_dashboard.html',
-                             total_students=total_students,
-                             total_groups=total_groups,
-                             total_tests=total_tests)
-    except Exception as e:
-        print(f"Dashboard error: {e}")
-        return render_template('simple_admin_dashboard.html',
-                             total_students=0,
-                             total_groups=0,
-                             total_tests=0)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    print("Logged out, session cleared")
-    return redirect(url_for('login'))
-
-@app.route('/api/login', methods=['POST'])
-def api_login():
-    try:
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '').strip()
-        
-        print(f"API Login attempt: username='{username}'")
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
         
         if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
             # Create admin user if not exists
@@ -188,55 +168,204 @@ def api_login():
             session['logged_in'] = True
             session.permanent = True
             
-            return jsonify({'success': True, 'redirect': url_for('admin_dashboard')})
+            return redirect(url_for('admin_dashboard'))
         else:
-            return jsonify({'success': False, 'error': 'Invalid credentials'})
-            
-    except Exception as e:
-        print(f"API Login error: {e}")
-        return jsonify({'success': False, 'error': 'Server error'})
+            return render_template('login.html', error="Login yoki parol noto'g'ri!")
+    
+    return render_template('login.html')
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    total_students = User.query.filter_by(is_admin=False).count()
+    total_groups = Group.query.count()
+    total_tests = Test.query.count()
+    total_subjects = Subject.query.count()
+    
+    recent_results = TestResult.query.order_by(TestResult.taken_at.desc()).limit(5).all()
+    
+    return render_template('admin_dashboard.html',
+                         total_students=total_students,
+                         total_groups=total_groups,
+                         total_tests=total_tests,
+                         total_subjects=total_subjects,
+                         recent_results=recent_results)
+
+@app.route('/admin/students')
+@login_required
+@admin_required
+def admin_students():
+    students = User.query.filter_by(is_admin=False).all()
+    groups = Group.query.all()
+    return render_template('admin_students.html', students=students, groups=groups)
+
+@app.route('/admin/groups')
+@login_required
+@admin_required
+def admin_groups():
+    groups = Group.query.all()
+    return render_template('admin_groups.html', groups=groups)
+
+@app.route('/admin/subjects')
+@login_required
+@admin_required
+def admin_subjects():
+    subjects = Subject.query.all()
+    return render_template('admin_subjects.html', subjects=subjects)
+
+@app.route('/admin/tests')
+@login_required
+@admin_required
+def admin_tests():
+    tests = Test.query.all()
+    subjects = Subject.query.all()
+    return render_template('admin_tests.html', tests=tests, subjects=subjects)
+
+@app.route('/admin/schedule')
+@login_required
+@admin_required
+def admin_schedule():
+    schedules = Schedule.query.all()
+    groups = Group.query.all()
+    return render_template('admin_schedule.html', schedules=schedules, groups=groups)
+
+@app.route('/student/dashboard')
+@login_required
+def student_dashboard():
+    user = User.query.get(session['user_id'])
+    recent_results = TestResult.query.filter_by(user_id=user.id).order_by(TestResult.taken_at.desc()).limit(5).all()
+    certificates = Certificate.query.filter_by(user_id=user.id).all()
+    difficult_topics = DifficultTopic.query.filter_by(user_id=user.id).count()
+    
+    return render_template('student_dashboard.html',
+                         user=user,
+                         recent_results=recent_results,
+                         certificates=certificates,
+                         difficult_topics=difficult_topics)
+
+@app.route('/subjects')
+@login_required
+def subjects():
+    subjects = Subject.query.all()
+    return render_template('subjects.html', subjects=subjects)
+
+@app.route('/subject/<int:subject_id>')
+@login_required
+def subject_detail(subject_id):
+    subject = Subject.query.get_or_404(subject_id)
+    topics = Topic.query.filter_by(subject_id=subject_id).all()
+    user = User.query.get(session['user_id'])
+    
+    # Get difficult topics for this user
+    difficult_topic_ids = [dt.topic_id for dt in DifficultTopic.query.filter_by(user_id=user.id).all()]
+    
+    return render_template('subject_detail.html',
+                         subject=subject,
+                         topics=topics,
+                         difficult_topic_ids=difficult_topic_ids)
+
+@app.route('/tests')
+@login_required
+def tests():
+    tests = Test.query.all()
+    user_results = {result.test_id: result for result in TestResult.query.filter_by(user_id=session['user_id']).all()}
+    
+    return render_template('tests.html', tests=tests, user_results=user_results)
+
+@app.route('/take_test/<int:test_id>')
+@login_required
+def take_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    questions = Question.query.filter_by(test_id=test_id).all()
+    
+    return render_template('take_test.html', test=test, questions=questions)
+
+@app.route('/submit_test/<int:test_id>', methods=['POST'])
+@login_required
+def submit_test(test_id):
+    test = Test.query.get_or_404(test_id)
+    questions = Question.query.filter_by(test_id=test_id).all()
+    
+    score = 0
+    for question in questions:
+        user_answer = request.form.get(f'question_{question.id}')
+        if user_answer == question.correct_answer:
+            score += 1
+    
+    # Save result
+    result = TestResult(
+        score=score,
+        total_questions=len(questions),
+        user_id=session['user_id'],
+        test_id=test_id
+    )
+    db.session.add(result)
+    db.session.commit()
+    
+    return redirect(url_for('test_result', result_id=result.id))
+
+@app.route('/test_result/<int:result_id>')
+@login_required
+def test_result(result_id):
+    result = TestResult.query.get_or_404(result_id)
+    return render_template('test_result.html', result=result)
+
+@app.route('/mark_difficult/<int:topic_id>')
+@login_required
+def mark_difficult(topic_id):
+    user_id = session['user_id']
+    
+    # Check if already marked
+    existing = DifficultTopic.query.filter_by(user_id=user_id, topic_id=topic_id).first()
+    
+    if existing:
+        db.session.delete(existing)
+        flash('Mavzu qiyinlar ro\'yxatidan olib tashlandi', 'info')
+    else:
+        difficult = DifficultTopic(user_id=user_id, topic_id=topic_id)
+        db.session.add(difficult)
+        flash('Mavzu qiyinlar ro\'yxatiga qo\'shildi', 'success')
+    
+    db.session.commit()
+    return redirect(request.referrer)
+
+@app.route('/schedule')
+@login_required
+def schedule():
+    user = User.query.get(session['user_id'])
+    schedules = Schedule.query.filter_by(group_id=user.group_id).all()
+    
+    return render_template('schedule.html', schedules=schedules)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
-    print("Starting application...")
-    print(f"Python version: {os.sys.version}")
-    print(f"Current directory: {os.getcwd()}")
-    
-    try:
-        with app.app_context():
-            print("Creating database tables...")
-            db.create_all()
-            print("Database tables created successfully!")
-            
-            # Create admin user if not exists
-            admin = User.query.filter_by(username='AkmalJaxonkulov').first()
-            if not admin:
-                print("Creating admin user...")
-                default_group = Group.query.filter_by(id=1).first()
-                if not default_group:
-                    print("Creating default group...")
-                    default_group = Group(id=1, name='Default', total_score=0)
-                    db.session.add(default_group)
-                    db.session.flush()
-                
-                admin = User(
-                    username='AkmalJaxonkulov',
-                    password_hash=generate_password_hash('Akmal1221'),
-                    first_name='Akmal',
-                    last_name='Jaxonkulov',
-                    group_id=1,
-                    is_admin=True
-                )
-                db.session.add(admin)
-                db.session.commit()
-                print("Admin user created successfully!")
-            else:
-                print("Admin user already exists!")
+    with app.app_context():
+        db.create_all()
         
-        port = int(os.getenv('PORT', 5000))
-        print(f"Starting Flask app on port {port}...")
-        app.run(host='0.0.0.0', port=port, debug=True)
-    except Exception as e:
-        print(f"Error during startup: {e}")
-        import traceback
-        traceback.print_exc()
-        raise
+        # Create admin user if not exists
+        admin = User.query.filter_by(username='AkmalJaxonkulov').first()
+        if not admin:
+            default_group = Group.query.filter_by(id=1).first()
+            if not default_group:
+                default_group = Group(id=1, name='Default', total_score=0)
+                db.session.add(default_group)
+                db.session.flush()
+            
+            admin = User(
+                username='AkmalJaxonkulov',
+                password_hash=generate_password_hash('Akmal1221'),
+                first_name='Akmal',
+                last_name='Jaxonkulov',
+                group_id=1,
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+    
+    port = int(os.getenv('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
