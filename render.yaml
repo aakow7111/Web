@@ -1,11 +1,10 @@
 services:
-  # Web Service
   - type: web
     name: education-platform
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "python render_app.py"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python render_app.py
     healthCheckPath: /
     envVars:
       - key: FLASK_ENV
