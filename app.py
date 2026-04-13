@@ -125,7 +125,23 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.context_processor
+def inject_user():
+    # Create a simple current_user object for templates
+    class CurrentUser:
+        def __init__(self):
+            self.is_authenticated = session.get('logged_in', False)
+            self.is_admin = session.get('is_admin', False)
+            self.username = session.get('username', '')
+            self.id = session.get('user_id', None)
+        
+        def is_authenticated(self):
+            return self.is_authenticated
+    
+    return dict(current_user=CurrentUser())
+
 # Routes
+
 @app.route('/')
 def index():
     return render_template('login.html')
@@ -357,6 +373,38 @@ def schedule():
     schedules = Schedule.query.filter_by(group_id=user.group_id).all()
     
     return render_template('schedule.html', schedules=schedules)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        group_id = request.form.get('group_id', type=int)
+        
+        # Check if username already exists
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            return render_template('register.html', error="Bu login allaqachon mavjud!")
+        
+        # Create new student
+        new_user = User(
+            username=username,
+            password_hash=generate_password_hash(password),
+            first_name=first_name,
+            last_name=last_name,
+            group_id=group_id,
+            is_admin=False
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash("Ro'yxatdan o'tdingiz! Endi login qiling.", 'success')
+        return redirect(url_for('login'))
+    
+    groups = Group.query.all()
+    return render_template('register.html', groups=groups)
 
 @app.route('/logout')
 def logout():
