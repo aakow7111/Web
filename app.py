@@ -619,6 +619,301 @@ def overall_rating():
     
     return render_template('overall_rating.html', student_data=student_data)
 
+@app.route('/admin/edit_student/<int:student_id>', methods=['GET', 'POST'])
+def admin_edit_student(student_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    student = User.query.get_or_404(student_id)
+    groups = Group.query.all()
+    
+    if request.method == 'POST':
+        student.first_name = request.form.get('first_name', '').strip()
+        student.last_name = request.form.get('last_name', '').strip()
+        student.group_id = request.form.get('group_id', type=int)
+        
+        db.session.commit()
+        flash("O'quvchi ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_students'))
+    
+    return render_template('edit_student.html', student=student, groups=groups)
+
+@app.route('/admin/delete_student/<int:student_id>')
+def admin_delete_student(student_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    student = User.query.get_or_404(student_id)
+    
+    # Delete related records
+    TestResult.query.filter_by(user_id=student_id).delete()
+    DifficultTopic.query.filter_by(user_id=student_id).delete()
+    Certificate.query.filter_by(user_id=student_id).delete()
+    
+    db.session.delete(student)
+    db.session.commit()
+    
+    flash("O'quvchi o'chirildi!", 'success')
+    return redirect(url_for('admin_students'))
+
+@app.route('/admin/edit_group/<int:group_id>', methods=['GET', 'POST'])
+def admin_edit_group(group_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    group = Group.query.get_or_404(group_id)
+    
+    if request.method == 'POST':
+        group.name = request.form.get('name', '').strip()
+        db.session.commit()
+        flash("Guruh ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_groups'))
+    
+    return render_template('edit_group.html', group=group)
+
+@app.route('/admin/delete_group/<int:group_id>')
+def admin_delete_group(group_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    group = Group.query.get_or_404(group_id)
+    
+    # Check if group has students
+    students = User.query.filter_by(group_id=group_id).all()
+    if students:
+        flash("Bu guruhda o'quvchilar mavjud! Avval ularni o'chiring yoki boshqa guruhga ko'chiring.", 'error')
+        return redirect(url_for('admin_groups'))
+    
+    db.session.delete(group)
+    db.session.commit()
+    
+    flash("Guruh o'chirildi!", 'success')
+    return redirect(url_for('admin_groups'))
+
+@app.route('/admin/edit_subject/<int:subject_id>', methods=['GET', 'POST'])
+def admin_edit_subject(subject_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    subject = Subject.query.get_or_404(subject_id)
+    
+    if request.method == 'POST':
+        subject.name = request.form.get('name', '').strip()
+        subject.description = request.form.get('description', '').strip()
+        db.session.commit()
+        flash("Fan ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_subjects'))
+    
+    return render_template('edit_subject.html', subject=subject)
+
+@app.route('/admin/delete_subject/<int:subject_id>')
+def admin_delete_subject(subject_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    subject = Subject.query.get_or_404(subject_id)
+    
+    # Check if subject has tests or topics
+    if subject.tests or subject.topics:
+        flash("Bu fanga testlar yoki mavzular bog'langan! Avval ularni o'chiring.", 'error')
+        return redirect(url_for('admin_subjects'))
+    
+    db.session.delete(subject)
+    db.session.commit()
+    
+    flash("Fan o'chirildi!", 'success')
+    return redirect(url_for('admin_subjects'))
+
+@app.route('/admin/edit_test/<int:test_id>', methods=['GET', 'POST'])
+def admin_edit_test(test_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    test = Test.query.get_or_404(test_id)
+    subjects = Subject.query.all()
+    
+    if request.method == 'POST':
+        test.title = request.form.get('title', '').strip()
+        test.subject_id = request.form.get('subject_id', type=int)
+        test.is_daily = 'is_daily' in request.form
+        test.is_comprehensive = 'is_comprehensive' in request.form
+        test.is_dtm = 'is_dtm' in request.form
+        test.duration_minutes = request.form.get('duration_minutes', type=int)
+        
+        db.session.commit()
+        flash("Test ma'lumotlari yangilandi!", 'success')
+        return redirect(url_for('admin_tests'))
+    
+    return render_template('edit_test.html', test=test, subjects=subjects)
+
+@app.route('/admin/delete_test/<int:test_id>')
+def admin_delete_test(test_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    test = Test.query.get_or_404(test_id)
+    
+    # Delete related questions and results
+    Question.query.filter_by(test_id=test_id).delete()
+    TestResult.query.filter_by(test_id=test_id).delete()
+    
+    db.session.delete(test)
+    db.session.commit()
+    
+    flash("Test o'chirildi!", 'success')
+    return redirect(url_for('admin_tests'))
+
+@app.route('/admin/test_questions/<int:test_id>')
+def admin_test_questions(test_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    test = Test.query.get_or_404(test_id)
+    questions = Question.query.filter_by(test_id=test_id).all()
+    
+    return render_template('admin_test_questions.html', test=test, questions=questions)
+
+@app.route('/admin/add_question/<int:test_id>', methods=['POST'])
+def admin_add_question(test_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    test = Test.query.get_or_404(test_id)
+    
+    text = request.form.get('text', '').strip()
+    option_a = request.form.get('option_a', '').strip()
+    option_b = request.form.get('option_b', '').strip()
+    option_c = request.form.get('option_c', '').strip()
+    option_d = request.form.get('option_d', '').strip()
+    correct_answer = request.form.get('correct_answer', '').strip()
+    
+    # Create new question
+    new_question = Question(
+        text=text,
+        option_a=option_a,
+        option_b=option_b,
+        option_c=option_c,
+        option_d=option_d,
+        correct_answer=correct_answer,
+        test_id=test_id
+    )
+    db.session.add(new_question)
+    db.session.commit()
+    
+    flash("Savol muvaffaqiyatli qo'shildi!", 'success')
+    return redirect(url_for('admin_test_questions', test_id=test_id))
+
+@app.route('/admin/test_results/<int:test_id>')
+def admin_test_results(test_id):
+    if not session.get('logged_in', False) or not session.get('is_admin', False):
+        return redirect(url_for('login'))
+    
+    test = Test.query.get_or_404(test_id)
+    results = TestResult.query.filter_by(test_id=test_id).order_by(TestResult.taken_at.desc()).all()
+    
+    # Calculate statistics
+    total_attempts = len(results)
+    avg_score = 0
+    pass_count = 0
+    
+    if total_attempts > 0:
+        total_score = sum(r.score for r in results)
+        avg_score = total_score / total_attempts
+        pass_count = len([r for r in results if r.score >= r.total_questions * 0.6])  # 60% passing
+    
+    return render_template('admin_test_results.html', 
+                         test=test, 
+                         results=results, 
+                         total_attempts=total_attempts,
+                         avg_score=avg_score,
+                         pass_count=pass_count)
+
+@app.route('/groups_rating')
+def groups_rating():
+    return redirect(url_for('group_rating'))
+
+@app.route('/upload_certificate', methods=['GET', 'POST'])
+def upload_certificate():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        description = request.form.get('description', '').strip()
+        
+        # Create new certificate
+        new_certificate = Certificate(
+            title=title,
+            description=description,
+            user_id=session['user_id']
+        )
+        db.session.add(new_certificate)
+        db.session.commit()
+        
+        flash("Sertifikat muvaffaqiyatli qo'shildi!", 'success')
+        return redirect(url_for('student_dashboard'))
+    
+    return render_template('upload_certificate.html')
+
+@app.route('/change_password', methods=['GET', 'POST'])
+def change_password():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '').strip()
+        new_password = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+        
+        user = User.query.get(session['user_id'])
+        
+        if not check_password_hash(user.password_hash, current_password):
+            flash("Joriy parol noto'g'ri!", 'error')
+            return redirect(url_for('change_password'))
+        
+        if new_password != confirm_password:
+            flash("Yangi parollar mos kelmadi!", 'error')
+            return redirect(url_for('change_password'))
+        
+        user.password_hash = generate_password_hash(new_password)
+        db.session.commit()
+        
+        flash("Parol muvaffaqiyatli o'zgartirildi!", 'success')
+        return redirect(url_for('student_dashboard'))
+    
+    return render_template('change_password.html')
+
+@app.route('/group_leader/dashboard')
+def group_leader_dashboard():
+    if not session.get('logged_in', False):
+        return redirect(url_for('login'))
+    
+    user = User.query.get(session['user_id'])
+    
+    if not user.is_group_leader:
+        return redirect(url_for('student_dashboard'))
+    
+    # Get group members
+    group_members = User.query.filter_by(group_id=user.group_id, is_admin=False).all()
+    
+    # Get group statistics
+    total_members = len(group_members)
+    avg_score = 0
+    if total_members > 0:
+        total_score = sum([g.id for g in group_members])  # Placeholder for actual scoring
+        avg_score = user.group.total_score / total_members if total_members > 0 else 0
+    
+    # Get recent test results for group
+    group_student_ids = [s.id for s in group_members]
+    recent_group_results = TestResult.query.filter(TestResult.user_id.in_(group_student_ids)).order_by(TestResult.taken_at.desc()).limit(10).all()
+    
+    return render_template('group_leader_dashboard.html',
+                         user=user,
+                         group_members=group_members,
+                         total_members=total_members,
+                         avg_score=avg_score,
+                         recent_group_results=recent_group_results)
+
 @app.route('/logout')
 def logout():
     session.clear()

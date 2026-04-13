@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Test natijalari{% endblock %}
+
+{% block page_title %}{{ test.title }} - Natijalari{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> {{ test.title }} - Natijalari</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <a href="{{ url_for('admin_tests') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Testlarga qaytish
+                    </a>
+                </div>
+                
+                <!-- Statistics -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ total_attempts }}</h5>
+                                <p class="card-text">Jami urinishlar</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ "%.1f"|format(avg_score) }}</h5>
+                                <p class="card-text">O'rtacha ball</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ pass_count }}</h5>
+                                <p class="card-text">O'tganlar</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results List -->
+                {% if results %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>O'quvchi</th>
+                                <th>Ball</th>
+                                <th>Umumiy savollar</th>
+                                <th>Foiz</th>
+                                <th>Sana</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for result in results %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ result.user.first_name }} {{ result.user.last_name }}</td>
+                                <td>{{ result.score }}</td>
+                                <td>{{ result.total_questions }}</td>
+                                <td>{{ "%.1f"|format((result.score / result.total_questions * 100)) }}%</td>
+                                <td>{{ result.taken_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td>
+                                    {% if result.score >= result.total_questions * 0.6 %}
+                                        <span class="badge bg-success">O'tdi</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">O'tmadi</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">Natijalar mavjud emas</h4>
+                    <p class="text-muted">Hali hech kim bu testni topshirmagan</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

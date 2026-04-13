@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}O'quvchini tahrirlash{% endblock %}
+
+{% block page_title %}O'quvchini tahrirlash{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-edit"></i> O'quvchini tahrirlash</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="first_name" class="form-label">Ism</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" value="{{ student.first_name }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="last_name" class="form-label">Familiya</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" value="{{ student.last_name }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="group_id" class="form-label">Guruh</label>
+                                <select class="form-select" id="group_id" name="group_id" required>
+                                    {% for group in groups %}
+                                        <option value="{{ group.id }}" {% if group.id == student.group_id %}selected{% endif %}>{{ group.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Login</label>
+                                <input type="text" class="form-control" value="{{ student.username }}" readonly>
+                                <small class="text-muted">Login o'zgartirilmaydi</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <a href="{{ url_for('admin_students') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Orqaga
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Saqlash
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
