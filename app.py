@@ -95,8 +95,16 @@ def login():
                 db.session.commit()
                 print("Admin user created!")
             
-            login_user(admin_user)
-            return redirect(url_for('admin_dashboard'))
+            # Force login with remember=True
+            login_user(admin_user, remember=True)
+            print(f"User logged in: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else 'Unknown'}")
+            
+            # Redirect to admin dashboard
+            next_page = request.args.get('next')
+            if not next_page or url_for('login') in next_page:
+                next_page = url_for('admin_dashboard')
+            print(f"Redirecting to: {next_page}")
+            return redirect(next_page)
         
         # Try normal authentication
         user = User.query.filter_by(username=username).first()
@@ -108,7 +116,7 @@ def login():
             
             if password_check:
                 print("Login successful!")
-                login_user(user)
+                login_user(user, remember=True)
                 return redirect(url_for('admin_dashboard'))
         
         print("Login failed!")
