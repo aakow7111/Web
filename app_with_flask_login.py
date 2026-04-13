@@ -1,6 +1,7 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 
@@ -10,9 +11,16 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///education.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
 # Database Models
-class User(db.Model):
+class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
@@ -61,14 +69,14 @@ def login():
         
         print(f"Login attempt: username={username}")
         
-        # Simple hardcoded admin login
+        # Hardcoded admin check for debugging
         if username == 'AkmalJaxonkulov' and password == 'Akmal1221':
-            print("Admin login successful!")
+            print("Hardcoded admin login successful!")
             
             # Create admin user if not exists
             admin_user = User.query.filter_by(username='AkmalJaxonkulov').first()
             if not admin_user:
-                print("Creating admin user...")
+                print("Creating admin user on login...")
                 default_group = Group.query.filter_by(id=1).first()
                 if not default_group:
                     default_group = Group(id=1, name='Default', total_score=0)
@@ -87,15 +95,29 @@ def login():
                 db.session.commit()
                 print("Admin user created!")
             
-            # Store user in session
-            session['user_id'] = admin_user.id
-            session['username'] = admin_user.username
-            session['is_admin'] = admin_user.is_admin
-            session.permanent = True
+            # Force login with remember=True
+            login_user(admin_user, remember=True)
+            print(f"User logged in: {current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else 'Unknown'}")
             
-            print(f"Session created: {session}")
-            print("Redirecting to admin dashboard...")
-            return redirect(url_for('admin_dashboard'))
+            # Redirect to admin dashboard
+            next_page = request.args.get('next')
+            if not next_page or url_for('login') in next_page:
+                next_page = url_for('admin_dashboard')
+            print(f"Redirecting to: {next_page}")
+            return redirect(next_page)
+        
+        # Try normal authentication
+        user = User.query.filter_by(username=username).first()
+        
+        if user:
+            print(f"User found: {user.username}")
+            password_check = check_password_hash(user.password_hash, password)
+            print(f"Password check result: {password_check}")
+            
+            if password_check:
+                print("Login successful!")
+                login_user(user, remember=True)
+                return redirect(url_for('admin_dashboard'))
         
         print("Login failed!")
         return render_template('login.html', error="Login yoki parol noto'g'ri!")
@@ -104,16 +126,15 @@ def login():
 
 @app.route('/admin')
 def admin_dashboard():
-    # Check if user is logged in via session
-    if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
+    # Check if user is logged in
+    try:
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        
+        if not current_user.is_admin:
+            return redirect(url_for('login'))
+    except:
         return redirect(url_for('login'))
-    
-    if not session.get('is_admin', False):
-        print("User is not admin, redirecting to login")
-        return redirect(url_for('login'))
-    
-    print(f"Admin dashboard accessed by: {session.get('username')}")
     
     total_students = User.query.filter_by(is_admin=False).count()
     total_groups = Group.query.count()
@@ -126,8 +147,10 @@ def admin_dashboard():
 
 @app.route('/logout')
 def logout():
-    session.clear()
-    print("Session cleared, redirecting to login")
+    try:
+        logout_user()
+    except:
+        pass
     return redirect(url_for('login'))
 
 if __name__ == '__main__':
