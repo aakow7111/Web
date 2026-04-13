@@ -97,15 +97,15 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="#" class="btn btn-sm btn-outline-info">
+                                    <a href="{{ url_for('admin_edit_student', student_id=student.id) }}" class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#resetPasswordModal{{ student.id }}">
+                                    <a href="{{ url_for('admin_edit_student', student_id=student.id) }}" class="btn btn-sm btn-outline-warning">
                                         <i class="fas fa-key"></i> Parol
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteStudent({{ student.id }})">
+                                    </a>
+                                    <a href="{{ url_for('admin_delete_student', student_id=student.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Rostdan ham ushbu o\'quvchini o\'chirmoqchimisiz?')">
                                         <i class="fas fa-trash"></i>
-                                    </button>
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}

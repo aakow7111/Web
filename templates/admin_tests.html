@@ -101,10 +101,10 @@
                                 <div class="d-flex justify-content-between align-items-start mb-3">
                                     <h6 class="card-title">{{ test.title }}</h6>
                                     <div class="btn-group btn-group-sm">
-                                        <a href="#" class="btn btn-outline-warning">
+                                        <a href="{{ url_for('admin_edit_test', test_id=test.id) }}" class="btn btn-outline-warning">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <a href="#" class="btn btn-outline-danger">
+                                        <a href="{{ url_for('admin_delete_test', test_id=test.id) }}" class="btn btn-outline-danger" onclick="return confirm('Rostdan ham ushbu testni o\'chirmoqchimisiz?')">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </div>
@@ -132,10 +132,10 @@
                                 </div>
                                 
                                 <div class="d-flex justify-content-between">
-                                    <a href="#" class="btn btn-sm btn-outline-info">
+                                    <a href="{{ url_for('admin_test_questions', test_id=test.id) }}" class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-plus"></i> Savol qo'shish
                                     </a>
-                                    <a href="#" class="btn btn-sm btn-outline-success">
+                                    <a href="{{ url_for('admin_test_results', test_id=test.id) }}" class="btn btn-sm btn-outline-success">
                                         <i class="fas fa-chart-bar"></i> Natijalar
                                     </a>
                                 </div>

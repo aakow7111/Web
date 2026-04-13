@@ -85,9 +85,9 @@
                                         <a href="{{ url_for('admin_edit_group', group_id=group.id) }}" class="btn btn-outline-warning">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button class="btn btn-outline-danger" onclick="deleteGroup({{ group.id }})">
+                                        <a href="{{ url_for('admin_delete_group', group_id=group.id) }}" class="btn btn-outline-danger" onclick="return confirm('Rostdan ham ushbu guruhni o\'chirmoqchimisiz?')">
                                             <i class="fas fa-trash"></i>
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
